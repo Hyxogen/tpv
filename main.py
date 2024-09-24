@@ -27,28 +27,28 @@ predict = [
 files = [
 "files/S018/S018R07.edf",
 "files/S018/S018R03.edf",
-#"files/S104/S104R03.edf",
-#"files/S091/S091R11.edf",
-#"files/S091/S091R03.edf",
-#"files/S091/S091R07.edf",
-#"files/S082/S082R11.edf",
-#"files/S082/S082R03.edf",
-#"files/S082/S082R07.edf",
-#"files/S048/S048R03.edf",
-#"files/S048/S048R11.edf",
-#"files/S048/S048R07.edf",
-#"files/S038/S038R11.edf",
-#"files/S038/S038R07.edf",
-#"files/S038/S038R03.edf",
-#"files/S040/S040R03.edf",
-#"files/S040/S040R07.edf",
-#"files/S040/S040R11.edf",
-#"files/S093/S093R07.edf",
-#"files/S093/S093R11.edf",
-#"files/S093/S093R03.edf",
-#"files/S047/S047R11.edf",
-#"files/S047/S047R07.edf",
-#"files/S047/S047R03.edf",
+"files/S104/S104R03.edf",
+"files/S091/S091R11.edf",
+"files/S091/S091R03.edf",
+"files/S091/S091R07.edf",
+"files/S082/S082R11.edf",
+"files/S082/S082R03.edf",
+"files/S082/S082R07.edf",
+"files/S048/S048R03.edf",
+"files/S048/S048R11.edf",
+"files/S048/S048R07.edf",
+"files/S038/S038R11.edf",
+"files/S038/S038R07.edf",
+"files/S038/S038R03.edf",
+"files/S040/S040R03.edf",
+"files/S040/S040R07.edf",
+"files/S040/S040R11.edf",
+"files/S093/S093R07.edf",
+"files/S093/S093R11.edf",
+"files/S093/S093R03.edf",
+"files/S047/S047R11.edf",
+"files/S047/S047R07.edf",
+"files/S047/S047R03.edf",
 #"files/S102/S102R07.edf",
 #"files/S102/S102R03.edf",
 #"files/S102/S102R11.edf",
@@ -216,20 +216,29 @@ def get_features(epochs, lofreq, hifreq, epoch_type, sfreq):
 
         activation = filtered - mean
 
+        mean_act = np.mean(activation, axis=1)
         energy = np.sum(activation ** 2, axis=1)
         power = energy / (len(epoch) * sfreq)
 
         event_type = epochs.events[idx][2] - 1
 
-        features = np.hstack((mean, energy, power))
+        #standarization will probably go wrong...
+        #try to make 2d array
+        features = np.zeros((3, 8))
+
+        features[0] = mean_act
+        features[1] = energy
+        features[2] = power
+
+        #print(mean_act.shape)
+        #print(energy.shape)
+        #print(power.shape)
+        #features = np.hstack((mean_act, energy, power))
+
         y.append(event_type)
 
         feat_mat.append(features)
     return np.array(feat_mat), np.array(y)
-
-def standardize(arr):
-    scaler = StandardScaler()
-    return scaler.fit_transform(arr)
 
 def get_all_features(data):
     event_id = {"T1": 1, "T2": 2}
@@ -274,11 +283,27 @@ def get(arr):
 
 x, y = get(raw_filtered)
 
+
 scaler = StandardScaler()
+
+event_todo = []
+
+def standardize(arr):
+    mean = np.mean(arr)
+    std = np.std(arr)
+    return (arr - mean) / std
+
+for event in x:
+    event_todo.append([standardize(event[0]), standardize(event[1]),
+                       standardize(event[2])])
+
+x = np.array(event_todo)
+x = x.reshape((x.shape[0], -1))
+
 pca = PCA()
 reg = LogisticRegression(penalty='l1', solver='liblinear')
 
-pipeline = Pipeline([("Scaler", scaler), ("CSP", pca), ("LogisticRegression", reg)])
+pipeline = Pipeline([("PCA", pca), ("LogisticRegression", reg)])
 
 pipeline.fit(x, y)
 
@@ -290,6 +315,14 @@ for raw in predict_raw:
 
 
 px, py = get(filtered_predict)
+
+event_todo = []
+for event in px:
+    event_todo.append([standardize(event[0]), standardize(event[1]),
+                       standardize(event[2])])
+
+px = np.array(event_todo)
+px = px.reshape((px.shape[0], -1))
 
 res = pipeline.predict(px)
 print(res)
