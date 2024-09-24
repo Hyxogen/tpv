@@ -76,9 +76,9 @@ def get_all_features(data):
     eds_feats, eds_y = get_features(erds, 8, 30, 2)
     mrcp_feats, mrcp_y = get_features(erds, 3, 30, 3)
 
-    return ers_feats, ers_y, erss.info
+    return ers_feats, ers_y
 
-a, b, info = get_all_features(raw_filt)
+a, b = get_all_features(raw_filt)
 
 scaler = StandardScaler()
 pca = PCA()
@@ -88,7 +88,13 @@ pipeline = Pipeline([("Scaler", scaler), ("CSP", pca), ("LogisticRegression", re
 
 pipeline.fit(a, b)
 
-predict = mne.io.read_raw_edf("files/S002/S002R03.edf", preload=True)
+raw_predict = load_data("files/S002/S002R03.edf")
+
+pa, pb = get_all_features(raw_predict)
+
+res = pipeline.predict(pa)
+print(res)
+print(pb)
 #TODO
 #   extract features
 #   normalize data
