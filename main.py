@@ -16,48 +16,55 @@ hi_cut = 30
 raw_filt = raw.copy().filter(lo_cut, hi_cut)
 raw_filt = raw_filt.notch_filter(freqs=50.0) # remove line noise
 
-channels = ["Fc3.", "Fcz.", "Fc4.", "C3..", "C1..", "Cz..", "C2..", "C4.."]
 
 # EXTRACT FEATURES
 
 sfreq = raw_filt.info["sfreq"]
+channels = ["Fc3.", "Fcz.", "Fc4.", "C3..", "C1..", "Cz..", "C2..", "C4.."]
 
-event_id = {"T1": 1, "T2": 2}
-events, event_dict = mne.events_from_annotations(raw_filt)
+ica = mne.preprocessing.ICA(method="infomax")
 
-erds = mne.Epochs(raw_filt, events, event_id=event_id, tmin=-2, tmax=0.0,
-                  baseline=None, picks=channels)
-erss = mne.Epochs(raw_filt, events, event_id=event_id, tmin=4.1, tmax=5.1,
-                  baseline=None, picks=channels)
-mrcp = mne.Epochs(raw_filt, events, event_id=event_id, tmin=-2, tmax=0,
-                  baseline=None, picks=channels)
+def get_features(epochs, lofreq, hifreq, epoch_type):
+    feat_mat = []
+    for idx, epoch in enumerate(epochs):
+        mean = np.mean(epoch, axis=0)
 
-ica2 = mne.preprocessing.ICA(method="infomax")
+        filtered = mne.filter.filter_data(epoch, method="iir", l_freq=lofreq, h_freq=hifreq,
+                                 sfreq=sfreq)
 
-ica2.fit(erds)
+        activation = filtered - mean
 
-feat_mat = []
+        energy = np.sum(activation ** 2, axis=1)
+        power = energy / (len(epoch) * sfreq)
 
-for idx, event in enumerate(erds):
-    res = event
+        event_type = epochs.events[idx][2]
 
-    filtered = mne.filter.filter_data(res, method="iir", l_freq=8, h_freq=30,
-                                      sfreq=sfreq)
+        features = np.hstack((mean, energy, power, epoch_type, event_type))
+        feat_mat.append(features)
+    return feat_mat
 
-    mean = np.mean(event, axis=0)
+def get_all_features(data):
+    event_id = {"T1": 1, "T2": 2}
+    events, event_dict = mne.events_from_annotations(raw_filt)
 
-    activation = filtered - mean
+    erss = mne.Epochs(data, events, event_id=event_id, tmin=4.1, tmax=5.1,
+                      baseline=None, picks=channels)
+    mrcp = mne.Epochs(data, events, event_id=event_id, tmin=-2, tmax=0,
+                      baseline=None, picks=channels)
+    erds = mne.Epochs(data, events, event_id=event_id, tmin=-2, tmax=0.0,
+                      baseline=None, picks=channels)
 
-    energy = np.sum(activation ** 2, axis=1)
-    power = energy / (len(event) * sfreq)
+    ica.fit(erss)
+    ica.fit(erds)
+    ica.fit(mrcp)
 
-    event_type = erds.events[idx][2]
+    ers_feats = get_features(erss, 8, 30, 1)
+    eds_feats = get_features(erds, 8, 30, 2)
+    mrcp_feats = get_features(erds, 3, 30, 3)
 
-    features = np.hstack((mean, energy, power, 1, event_type))
-    feat_mat.append(features)
+    return ers_feats, eds_feats, mrcp_feats
 
-print(len(feat_mat))
-print(len(feat_mat[0]))
+a, b, c = get_all_features(raw_filt)
 #TODO
 #   extract features
 #   normalize data
