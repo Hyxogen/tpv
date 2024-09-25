@@ -71,36 +71,36 @@ files = [
 "files/S102/S102R07.edf",
 "files/S102/S102R03.edf",
 "files/S102/S102R11.edf",
-#"files/S083/S083R11.edf",
-#"files/S083/S083R03.edf",
-#"files/S083/S083R07.edf",
-#"files/S034/S034R07.edf",
-#"files/S034/S034R03.edf",
-#"files/S034/S034R11.edf",
-#"files/S041/S041R07.edf",
-#"files/S041/S041R03.edf",
-#"files/S041/S041R11.edf",
-#"files/S035/S035R07.edf",
-#"files/S035/S035R11.edf",
-#"files/S035/S035R03.edf",
-#"files/S060/S060R07.edf",
-#"files/S060/S060R11.edf",
-#"files/S060/S060R03.edf",
-#"files/S009/S009R11.edf",
-#"files/S009/S009R07.edf",
-#"files/S009/S009R03.edf",
-#"files/S045/S045R11.edf",
-#"files/S045/S045R07.edf",
-#"files/S045/S045R03.edf",
-#"files/S044/S044R03.edf",
-#"files/S044/S044R11.edf",
-#"files/S044/S044R07.edf",
-#"files/S029/S029R11.edf",
-#"files/S029/S029R03.edf",
-#"files/S029/S029R07.edf",
-#"files/S056/S056R03.edf",
-#"files/S056/S056R11.edf",
-#"files/S056/S056R07.edf",
+"files/S083/S083R11.edf",
+"files/S083/S083R03.edf",
+"files/S083/S083R07.edf",
+"files/S034/S034R07.edf",
+"files/S034/S034R03.edf",
+"files/S034/S034R11.edf",
+"files/S041/S041R07.edf",
+"files/S041/S041R03.edf",
+"files/S041/S041R11.edf",
+"files/S035/S035R07.edf",
+"files/S035/S035R11.edf",
+"files/S035/S035R03.edf",
+"files/S060/S060R07.edf",
+"files/S060/S060R11.edf",
+"files/S060/S060R03.edf",
+"files/S009/S009R11.edf",
+"files/S009/S009R07.edf",
+"files/S009/S009R03.edf",
+"files/S045/S045R11.edf",
+"files/S045/S045R07.edf",
+"files/S045/S045R03.edf",
+"files/S044/S044R03.edf",
+"files/S044/S044R11.edf",
+"files/S044/S044R07.edf",
+"files/S029/S029R11.edf",
+"files/S029/S029R03.edf",
+"files/S029/S029R07.edf",
+"files/S056/S056R03.edf",
+"files/S056/S056R11.edf",
+"files/S056/S056R07.edf",
 #"files/S076/S076R07.edf",
 #"files/S076/S076R03.edf",
 #"files/S076/S076R11.edf",
@@ -251,13 +251,8 @@ def get_all_features(data):
 
     epochs = mne.Epochs(data, events, event_id=event_id, tmin=-2, tmax=5.1,
                         baseline=None, preload=True)
-    #erss = mne.Epochs(data, events, event_id=event_id, tmin=4.1, tmax=5.1,
-    #                  baseline=None)
-    #erds = mne.Epochs(data, events, event_id=event_id, tmin=-2, tmax=0,
-    #                  baseline=(None, None))
-    #mrcp = mne.Epochs(data, events, event_id=event_id, tmin=-2, tmax=0,
-    #                  baseline=None)
-
+    
+    #ica.fit(data).apply(epochs)
     # TODO we're probably not actually applying the ICA algo
     # TODO use apply!
     #ica.fit(erss)
@@ -304,7 +299,7 @@ x = x.reshape((x.shape[0], -1))
 pca = PCA()
 #reg = LogisticRegression(penalty='l1', solver='liblinear')
 #reg = RandomForestClassifier()
-reg = MLPClassifier(hidden_layer_sizes=(200, 100), max_iter=400)
+reg = MLPClassifier(hidden_layer_sizes=(20, 10), max_iter=16000)
 
 pipeline = Pipeline([("PCA", pca), ("LogisticRegression", reg)])
 
