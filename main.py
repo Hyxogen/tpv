@@ -53,24 +53,24 @@ files = [
 "files/S082/S082R11.edf",
 "files/S082/S082R03.edf",
 "files/S082/S082R07.edf",
-#"files/S048/S048R03.edf",
-#"files/S048/S048R11.edf",
-#"files/S048/S048R07.edf",
-#"files/S038/S038R11.edf",
-#"files/S038/S038R07.edf",
-#"files/S038/S038R03.edf",
-#"files/S040/S040R03.edf",
-#"files/S040/S040R07.edf",
-#"files/S040/S040R11.edf",
-#"files/S093/S093R07.edf",
-#"files/S093/S093R11.edf",
-#"files/S093/S093R03.edf",
-#"files/S047/S047R11.edf",
-#"files/S047/S047R07.edf",
-#"files/S047/S047R03.edf",
-#"files/S102/S102R07.edf",
-#"files/S102/S102R03.edf",
-#"files/S102/S102R11.edf",
+"files/S048/S048R03.edf",
+"files/S048/S048R11.edf",
+"files/S048/S048R07.edf",
+"files/S038/S038R11.edf",
+"files/S038/S038R07.edf",
+"files/S038/S038R03.edf",
+"files/S040/S040R03.edf",
+"files/S040/S040R07.edf",
+"files/S040/S040R11.edf",
+"files/S093/S093R07.edf",
+"files/S093/S093R11.edf",
+"files/S093/S093R03.edf",
+"files/S047/S047R11.edf",
+"files/S047/S047R07.edf",
+"files/S047/S047R03.edf",
+"files/S102/S102R07.edf",
+"files/S102/S102R03.edf",
+"files/S102/S102R11.edf",
 #"files/S083/S083R11.edf",
 #"files/S083/S083R03.edf",
 #"files/S083/S083R07.edf",
@@ -207,9 +207,10 @@ raws = None
 
 ica = mne.preprocessing.ICA(method="infomax")
 
-def get_features(epochs, lofreq, hifreq, epoch_type, sfreq):
+def get_features(epochs, tmin, tmax, lofreq, hifreq, epoch_type, sfreq):
     feat_mat = []
     y = []
+    epochs = epochs.copy().crop(tmin=tmin, tmax=tmax)
     for idx, epoch in enumerate(epochs):
         mean = np.mean(epoch, axis=0)
 
@@ -248,54 +249,48 @@ def get_all_features(data):
     
     sfreq = data.info["sfreq"]
 
-    erss = mne.Epochs(data, events, event_id=event_id, tmin=4.1, tmax=5.1,
-                      baseline=None)
+    epochs = mne.Epochs(data, events, event_id=event_id, tmin=-2, tmax=5.1,
+                        baseline=None, preload=True)
+    #erss = mne.Epochs(data, events, event_id=event_id, tmin=4.1, tmax=5.1,
+    #                  baseline=None)
+    #erds = mne.Epochs(data, events, event_id=event_id, tmin=-2, tmax=0,
+    #                  baseline=(None, None))
     #mrcp = mne.Epochs(data, events, event_id=event_id, tmin=-2, tmax=0,
     #                  baseline=None)
-    #erds = mne.Epochs(data, events, event_id=event_id, tmin=-2, tmax=0.0,
-    #                  baseline=None)
 
-    ica.fit(erss)
+    # TODO we're probably not actually applying the ICA algo
+    # TODO use apply!
+    #ica.fit(erss)
     #ica.fit(erds)
     #ica.fit(mrcp)
 
-    ers_feats, ers_y = get_features(erss, 8, 30, 1, sfreq)
-    #erd_feats, eds_y = get_features(erds, 8, 30, 2, sfreq)
-    #mrcp_feats, mrcp_y = get_features(erds, 3, 30, 3, sfreq)
+    ers_feats, ers_y = get_features(epochs, 4.1, 5.1, 8, 30, 1, sfreq)
+    erd_feats, erd_y = get_features(epochs, -2, 0, 8, 30, 2, sfreq)
+    mrcp_feats, mrcp_y = get_features(epochs, -2, 0, 3, 30, 3, sfreq)
 
-    #TODO REMOVE!!!
-    erd_feats = np.array([])
-    mrcp_feats = np.array([])
+    res = np.concatenate((ers_feats, erd_feats, mrcp_feats), axis=1)
 
-    return ers_feats, erd_feats, mrcp_feats, ers_y
+    return res, ers_y
 
 def get(arr):
-    erss = []
-    erds = []
-    mrcps = []
+    features = []
     y = []
 
     for filtered in arr:
-        ers, erd, mrcp, epochs = get_all_features(filtered)
+        x,  epochs = get_all_features(filtered)
         print("got some features")
         
-        for i in ers:
-            erss.append(i)
-
-        for i in erd:
-            erds.append(i)
-
-        for i in mrcp:
-            mrcps.append(i)
+        for i in x:
+            features.append(i)
 
         for i in epochs:
             y.append(i)
 
-    erss = np.array(erss)
-    print(erss.shape[1])
-    return erss, np.array(erds), np.array(mrcps), np.array(y)
+    features = np.array(features)
+    print(features.shape)
+    return features, np.array(y)
 
-x, _, _, y = get(raw_filtered)
+x, y = get(raw_filtered)
 
 scaler = StandardScaler()
 
@@ -322,7 +317,7 @@ for raw in predict_raw:
     filtered_predict.append(filter_raw(raw))
 
 
-px, _, _, py = get(filtered_predict)
+px, py = get(filtered_predict)
 
 
 for i in range(px.shape[1]):
