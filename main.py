@@ -7,6 +7,8 @@ from sklearn.decomposition import PCA
 from sklearn.pipeline import Pipeline
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.neural_network import MLPClassifier
 
 mne.set_log_level(verbose='WARNING')
 
@@ -17,11 +19,28 @@ predict = [
 "files/S042/S042R07.edf",
 "files/S042/S042R03.edf",
 "files/S042/S042R11.edf",
-"files/S052/S052R07.edf",
-"files/S052/S052R03.edf",
-"files/S052/S052R11.edf",
-"files/S104/S104R11.edf",
-"files/S104/S104R07.edf",
+#"files/S052/S052R07.edf",
+#"files/S052/S052R03.edf",
+#"files/S052/S052R11.edf",
+#"files/S104/S104R11.edf",
+#"files/S104/S104R07.edf",
+#"files/S090/S090R11.edf",
+#"files/S086/S086R11.edf",
+#"files/S086/S086R03.edf",
+#"files/S086/S086R07.edf",
+#"files/S017/S017R11.edf",
+#"files/S017/S017R07.edf",
+#"files/S017/S017R03.edf",
+#"files/S013/S013R07.edf",
+#"files/S013/S013R11.edf",
+#"files/S013/S013R03.edf",
+#"files/S055/S055R11.edf",
+#"files/S055/S055R07.edf",
+#"files/S055/S055R03.edf",
+#"files/S016/S016R03.edf",
+#"files/S016/S016R07.edf",
+#"files/S016/S016R11.edf",
+#"files/S103/S103R11.edf",
 ]
 
 files = [
@@ -34,21 +53,21 @@ files = [
 "files/S082/S082R11.edf",
 "files/S082/S082R03.edf",
 "files/S082/S082R07.edf",
-"files/S048/S048R03.edf",
-"files/S048/S048R11.edf",
-"files/S048/S048R07.edf",
-"files/S038/S038R11.edf",
-"files/S038/S038R07.edf",
-"files/S038/S038R03.edf",
-"files/S040/S040R03.edf",
-"files/S040/S040R07.edf",
-"files/S040/S040R11.edf",
-"files/S093/S093R07.edf",
-"files/S093/S093R11.edf",
-"files/S093/S093R03.edf",
-"files/S047/S047R11.edf",
-"files/S047/S047R07.edf",
-"files/S047/S047R03.edf",
+#"files/S048/S048R03.edf",
+#"files/S048/S048R11.edf",
+#"files/S048/S048R07.edf",
+#"files/S038/S038R11.edf",
+#"files/S038/S038R07.edf",
+#"files/S038/S038R03.edf",
+#"files/S040/S040R03.edf",
+#"files/S040/S040R07.edf",
+#"files/S040/S040R11.edf",
+#"files/S093/S093R07.edf",
+#"files/S093/S093R11.edf",
+#"files/S093/S093R03.edf",
+#"files/S047/S047R11.edf",
+#"files/S047/S047R07.edf",
+#"files/S047/S047R03.edf",
 #"files/S102/S102R07.edf",
 #"files/S102/S102R03.edf",
 #"files/S102/S102R11.edf",
@@ -150,23 +169,6 @@ files = [
 #"files/S058/S058R03.edf",
 #"files/S090/S090R03.edf",
 #"files/S090/S090R07.edf",
-#"files/S090/S090R11.edf",
-#"files/S086/S086R11.edf",
-#"files/S086/S086R03.edf",
-#"files/S086/S086R07.edf",
-#"files/S017/S017R11.edf",
-#"files/S017/S017R07.edf",
-#"files/S017/S017R03.edf",
-#"files/S013/S013R07.edf",
-#"files/S013/S013R11.edf",
-#"files/S013/S013R03.edf",
-#"files/S055/S055R11.edf",
-#"files/S055/S055R07.edf",
-#"files/S055/S055R03.edf",
-#"files/S016/S016R03.edf",
-#"files/S016/S016R07.edf",
-#"files/S016/S016R11.edf",
-#"files/S103/S103R11.edf",
 ]
 
 # FILTER
@@ -258,50 +260,56 @@ def get_all_features(data):
     #ica.fit(mrcp)
 
     ers_feats, ers_y = get_features(erss, 8, 30, 1, sfreq)
-    #eds_feats, eds_y = get_features(erds, 8, 30, 2, sfreq)
+    #erd_feats, eds_y = get_features(erds, 8, 30, 2, sfreq)
     #mrcp_feats, mrcp_y = get_features(erds, 3, 30, 3, sfreq)
 
-    return ers_feats, ers_y
+    #TODO REMOVE!!!
+    erd_feats = np.array([])
+    mrcp_feats = np.array([])
+
+    return ers_feats, erd_feats, mrcp_feats, ers_y
 
 def get(arr):
-    x = []
+    erss = []
+    erds = []
+    mrcps = []
     y = []
 
     for filtered in arr:
-        a, b = get_all_features(filtered)
+        ers, erd, mrcp, epochs = get_all_features(filtered)
+        print("got some features")
         
-        for i in a:
-            x.append(i)
+        for i in ers:
+            erss.append(i)
 
-        for i in b:
+        for i in erd:
+            erds.append(i)
+
+        for i in mrcp:
+            mrcps.append(i)
+
+        for i in epochs:
             y.append(i)
-        print("got features")
 
-    x = np.array(x)
-    y = np.array(y)
-    return x, y
+    erss = np.array(erss)
+    print(erss.shape[1])
+    return erss, np.array(erds), np.array(mrcps), np.array(y)
 
-x, y = get(raw_filtered)
-
+x, _, _, y = get(raw_filtered)
 
 scaler = StandardScaler()
 
-event_todo = []
+scalers = {}
+for i in range(x.shape[1]):
+    scalers[i] = StandardScaler()
+    x[:, i, :] = scalers[i].fit_transform(x[:, i, :])
 
-def standardize(arr):
-    mean = np.mean(arr)
-    std = np.std(arr)
-    return (arr - mean) / std
-
-for event in x:
-    event_todo.append([standardize(event[0]), standardize(event[1]),
-                       standardize(event[2])])
-
-x = np.array(event_todo)
 x = x.reshape((x.shape[0], -1))
 
 pca = PCA()
-reg = LogisticRegression(penalty='l1', solver='liblinear')
+#reg = LogisticRegression(penalty='l1', solver='liblinear')
+#reg = RandomForestClassifier()
+reg = MLPClassifier(hidden_layer_sizes=(200, 100), max_iter=400)
 
 pipeline = Pipeline([("PCA", pca), ("LogisticRegression", reg)])
 
@@ -314,14 +322,12 @@ for raw in predict_raw:
     filtered_predict.append(filter_raw(raw))
 
 
-px, py = get(filtered_predict)
+px, _, _, py = get(filtered_predict)
 
-event_todo = []
-for event in px:
-    event_todo.append([standardize(event[0]), standardize(event[1]),
-                       standardize(event[2])])
 
-px = np.array(event_todo)
+for i in range(px.shape[1]):
+    px[:, i, :] = scalers[i].transform(px[:, i, :])
+
 px = px.reshape((px.shape[0], -1))
 
 res = pipeline.predict(px)
