@@ -16,20 +16,20 @@ mne.set_log_level(verbose='WARNING')
 channels = ["Fc3.", "Fcz.", "Fc4.", "C3..", "C1..", "Cz..", "C2..", "C4.."]
 
 predict = [
-"data/files/S018/S018R11.edf",
-"data/files/S042/S042R07.edf",
-"data/files/S042/S042R03.edf",
-"data/files/S042/S042R11.edf",
-"data/files/S052/S052R07.edf",
-"data/files/S052/S052R03.edf",
-"data/files/S052/S052R11.edf",
-"data/files/S104/S104R11.edf",
-"data/files/S104/S104R07.edf",
+"/Users/bence/Desktop/total_perspective_vortex/data/files/S018/S018R11.edf",
+"/Users/bence/Desktop/total_perspective_vortex/data/files/S042/S042R07.edf",
+"/Users/bence/Desktop/total_perspective_vortex/data/files/S042/S042R03.edf",
+"/Users/bence/Desktop/total_perspective_vortex/data/files/S042/S042R11.edf",
+"/Users/bence/Desktop/total_perspective_vortex/data/files/S052/S052R07.edf",
+"/Users/bence/Desktop/total_perspective_vortex/data/files/S052/S052R03.edf",
+# "/Users/bence/Desktop/total_perspective_vortex/data/files/S052R11.edf",
+# "/Users/bence/Desktop/total_perspective_vortex/data/files/S104R11.edf",
+# "/Users/bence/Desktop/total_perspective_vortex/data/files/S104R07.edf",
 ]
 
 files = [
-"data/files/S018/S018R07.edf",
-"data/files/S018/S018R03.edf",
+"/Users/bence/Desktop/total_perspective_vortex/data/files/S018/S018R07.edf",
+"/Users/bence/Desktop/total_perspective_vortex/data/files/S018/S018R03.edf",
 #"data/files/S104/S104R03.edf",
 #"data/files/S091/S091R11.edf",
 #"data/files/S091/S091R03.edf",
@@ -216,7 +216,7 @@ class My_PCA(BaseEstimator, TransformerMixin):
 		#eigenval and eigenvec
 		eigenvalues, eigenvectors = np.linalg.eigh(cov_matrix) #eig is making imaginary numbers because of floating point precisions
 		'''
-		5.0000 4.9999
+		5.0001 4.9999
 		4.9999 5.0000
 		'''
 		#sort eigenvalues and vectors, these return indices, not values of eigenvals in descending order
@@ -309,6 +309,10 @@ class My_PCA(BaseEstimator, TransformerMixin):
 
 
 def filter_raw(data):
+	'''
+	Applies a band-filter pass between 0.1-30Hz to retain relevant EEG frequencies
+	Applies a notch filter at 50 Hz to remove power line noise
+	'''
 	lo_cut = 0.1
 	hi_cut = 30
 
@@ -318,6 +322,9 @@ def filter_raw(data):
 	return filtered
 
 def load_raw(files):
+	'''
+	Reads EEG data from .edf files, specifies which channels to read. (channels used for this project can be found in the paper)
+	'''
 	raws = []
 	for file in files:
 		raws.append(mne.io.read_raw_edf(file, include=channels))
@@ -335,30 +342,35 @@ for raw in raws:
 	raw_filtered.append(filter_raw(raw))
 
 print("done filtering")
-raws = None
+raws = None #free up memory
+
 
 # EXTRACT FEATURES
 
 
 ica = mne.preprocessing.ICA(method="infomax")
 
+
+#TODO, VERIFY DIMENSIONS AND CHECK MEAN
 def get_features(epochs, lofreq, hifreq, epoch_type, sfreq):
 	feat_mat = []
 	y = []
 	for idx, epoch in enumerate(epochs):
-		mean = np.mean(epoch, axis=0)
+		mean = np.mean(epoch, axis=0) #is this correct mean? calculating the mean across channels for each time point
+		#mean = np.mean(epoch, axis=0) #this calculates mean over time for each channel?
 
 		filtered = mne.filter.filter_data(epoch, method="iir", l_freq=lofreq, h_freq=hifreq,
 								 sfreq=sfreq)
 
 		activation = filtered - mean
 
-		energy = np.sum(activation ** 2, axis=1)
+		energy = np.sum(activation ** 2, axis=1) #is axis correct here?
 		power = energy / (len(epoch) * sfreq)
 
 		event_type = epochs.events[idx][2] - 1
-
-		features = np.hstack((mean, energy, power))
+		#is there epochs.event_id, epochs.selection?
+		#https://mne.tools/1.7/generated/mne.Epochs.html
+		features = np.hstack((mean, energy, power)) #puts matrices next to eachother horizontally 
 		y.append(event_type)
 
 		feat_mat.append(features)
@@ -375,7 +387,10 @@ def get_features(epochs, lofreq, hifreq, epoch_type, sfreq):
 
 def standardize(arr):
 	scaler = StandardScaler()
+	#we would also need to return the scaler after fitting, or saving the scale somewhere?
 	return scaler.fit_transform(arr)
+
+
 
 def get_all_features(data):
 	event_id = {"T1": 1, "T2": 2}
@@ -390,7 +405,7 @@ def get_all_features(data):
 	#erds = mne.Epochs(data, events, event_id=event_id, tmin=-2, tmax=0.0,
 	#                  baseline=None)
 
-	ica.fit(erss)
+	ica.fit(erss) #shouldnt we return an ICA instance?
 	#ica.fit(erds)
 	#ica.fit(mrcp)
 
@@ -566,13 +581,16 @@ def get(arr):
 
 x, y = get(raw_filtered)
 
-# pca = PCA()
+pca = PCA(n_components=2)
 ft_pca = My_PCA()
+
 scaler = StandardScaler()
 reg = LogisticRegression(penalty='l1', solver='liblinear')
 
+pipeline_orig_pca = Pipeline([("Scaler", scaler), ("CSP", pca), ("LogisticRegression", reg)])
 pipeline = Pipeline([("Scaler", scaler), ("CSP", ft_pca), ("LogisticRegression", reg)])
 
+pipeline_orig_pca.fit(x, y)
 pipeline.fit(x, y)
 
 #is this after creating the feature vector?
@@ -585,12 +603,17 @@ for raw in predict_raw:
 
 px, py = get(filtered_predict)
 
+res_orig_pca = pipeline_orig_pca.predict(px)
 res = pipeline.predict(px)
-print(res)
+
+print(f'{res} is the custom pca result.\n\n')
+print(f'{res_orig_pca} is the original pca result.')
+
 print(py)
 
+acc_orig = accuracy_score(py, res_orig_pca)
 acc = accuracy_score(py, res)
-print(acc)
+print(f'{acc} is the custom accuracy\n{acc_orig} is the original')
 #TODO
 #   extract features
 #   normalize data
