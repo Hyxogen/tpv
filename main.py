@@ -9,6 +9,7 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.neural_network import MLPClassifier
+from sklearn.base import BaseEstimator, TransformerMixin
 
 mne.set_log_level(verbose='WARNING')
 
@@ -82,25 +83,25 @@ files = [
 "files/S041/S041R11.edf",
 "files/S035/S035R07.edf",
 "files/S035/S035R11.edf",
-"files/S035/S035R03.edf",
-"files/S060/S060R07.edf",
-"files/S060/S060R11.edf",
-"files/S060/S060R03.edf",
-"files/S009/S009R11.edf",
-"files/S009/S009R07.edf",
-"files/S009/S009R03.edf",
-"files/S045/S045R11.edf",
-"files/S045/S045R07.edf",
-"files/S045/S045R03.edf",
-"files/S044/S044R03.edf",
-"files/S044/S044R11.edf",
-"files/S044/S044R07.edf",
-"files/S029/S029R11.edf",
-"files/S029/S029R03.edf",
-"files/S029/S029R07.edf",
-"files/S056/S056R03.edf",
-"files/S056/S056R11.edf",
-"files/S056/S056R07.edf",
+#"files/S035/S035R03.edf",
+#"files/S060/S060R07.edf",
+#"files/S060/S060R11.edf",
+#"files/S060/S060R03.edf",
+#"files/S009/S009R11.edf",
+#"files/S009/S009R07.edf",
+#"files/S009/S009R03.edf",
+#"files/S045/S045R11.edf",
+#"files/S045/S045R07.edf",
+#"files/S045/S045R03.edf",
+#"files/S044/S044R03.edf",
+#"files/S044/S044R11.edf",
+#"files/S044/S044R07.edf",
+#"files/S029/S029R11.edf",
+#"files/S029/S029R03.edf",
+#"files/S029/S029R07.edf",
+#"files/S056/S056R03.edf",
+#"files/S056/S056R11.edf",
+#"files/S056/S056R07.edf",
 #"files/S076/S076R07.edf",
 #"files/S076/S076R03.edf",
 #"files/S076/S076R11.edf",
@@ -170,6 +171,174 @@ files = [
 #"files/S090/S090R03.edf",
 #"files/S090/S090R07.edf",
 ]
+
+class My_PCA(BaseEstimator, TransformerMixin):
+    def __init__(self, n_comps = 2): #amount of PCAs to select, we have to check later for how much percentage do they cover
+        self.n_comps = n_comps
+        self.current_selected_eigenvectors = None
+        self.current_centered_feature = None
+
+    def fit(self, x_features):
+        x_features = x_features.T
+        current_centered_feature = x_features
+
+        for i in range(len(x_features)):
+            current_centered_feature[i] -= current_centered_feature[i].mean()
+
+        #compute covariance matrix
+        #cov_matrix = np.matmul(current_centered_feature, current_centered_feature.T) / (current_centered_feature.shape[0] - 1)
+        cov_matrix = np.cov(current_centered_feature) #T is to compute between features instead of datapoints, (rows)
+        #print("shape1 {}".format(cov_matrix.shape))
+        #print(cov_matrix)
+
+        #print("shape2 {}".format(cov_matrix2.shape))
+        #print(cov_matrix2)
+
+        #print("diff")
+        #print(cov_matrix - cov_matrix2)
+        '''
+        feature vec after transposing
+                     sample(1)    sample(2) ... sample(m)
+        attribute 1 
+        attribute 2
+        ...
+        attribute n
+        '''
+
+        '''
+        feature vec
+        [ X_11, X_12, X_13, ..., X_1m ]
+        [ X_21, X_22, X_23, ..., X_2m ]
+        [ X_31, X_32, X_33, ..., X_3m ]
+                ...
+        [ X_n1, X_n2, X_n3, ..., X_nm ]
+
+
+        centered transposed data
+        Sample1  Sample2  Sample3  Sample4  Sample5
+        A   -2.0     -1.0      0.0      1.0      2.0
+        B   -4.0     -2.0      0.0      2.0      4.0
+        C   -6.0     -3.0      0.0      3.0      6.0
+
+        covariance matrix:
+
+            A      B      C
+        A  2.5    5.0    7.5
+        B  5.0   10.0   15.0
+        C  7.5   15.0   22.5
+
+        Cov(A,A) variance of feature A (with itself)
+        Cov(A,B) covariance of A and B
+        Cov(A,C) covariance of A and C
+        '''
+
+        #eigenval and eigenvec
+        eigenvalues, eigenvectors = np.linalg.eigh(cov_matrix) #eig is making imaginary numbers because of floating point precisions
+        print("eigenvalues({}): {}".format(len(eigenvalues), eigenvalues.shape))
+        print("eigevectors({}): {}".format(len(eigenvectors), eigenvectors.shape))
+        '''
+        5.0001 4.9999
+        4.9999 5.0000
+        '''
+        #sort eigenvalues and vectors, these return indices, not values of eigenvals in descending order
+        sorted_eigen_val_indexes = eigenvalues[::-1]
+        '''
+        eigenvals   eigenvecs
+        2.1         v2
+        0.8         v1
+        0.5         v3
+        '''
+
+    
+        sorted_eigenvecs = []
+        for i in range(len(sorted_eigen_val_indexes)):
+            sorted_eigenvecs.append(eigenvectors[:, i])
+
+        sorted_eigenvecs = np.array(sorted_eigenvecs)
+        self.current_selected_eigenvectors = sorted_eigenvecs[:, :self.n_comps]
+        print(self.current_selected_eigenvectors.shape)
+
+
+    def transform(self, x_features):
+        x_features = x_features.T
+        current_centered_feature = x_features
+
+        #transform the data by projecting it to PCAs #new eigenvecs are now the new axes, dot projects the features to the new axes
+        for i in range(len(x_features)):
+            current_centered_feature[i] -= current_centered_feature[i].mean()
+
+        #features_transformed = np.dot(current_centered_feature, self.current_selected_eigenvectors)
+        print("centered: {} eig: {}".format(current_centered_feature.shape,
+                                            self.current_selected_eigenvectors.shape))
+        features_transformed = np.matmul(self.current_selected_eigenvectors.T, current_centered_feature)
+        print(features_transformed.shape)
+        return features_transformed.T
+
+
+    #we could also add the transformed features to a self.current_transformed_features
+    def fit_transform(self, x_features, y=None):
+        self.fit(x_features)
+        transformed_features = self.transform(x_features)
+        return transformed_features
+
+
+
+# def ft_PCA(features): #maybe add n components?
+#     #calculate the mean for gene 1 and gene 2
+
+#     n_componens = 2
+#     feature_mean = np.mean(features)
+#     features_centered = features - feature_mean
+
+#     #compute covariance matrix
+#     cov_matrix = np.cov(features_centered.T) #T is to compute between features instead of datapoints, (rows)
+#     '''
+#     feature vec
+#     [ X_11, X_12, X_13, ..., X_1m ]
+#     [ X_21, X_22, X_23, ..., X_2m ]
+#     [ X_31, X_32, X_33, ..., X_3m ]
+#             ...
+#     [ X_n1, X_n2, X_n3, ..., X_nm ]
+
+
+#     centered transposed data
+#     Sample1  Sample2  Sample3  Sample4  Sample5
+#     A   -2.0     -1.0      0.0      1.0      2.0
+#     B   -4.0     -2.0      0.0      2.0      4.0
+#     C   -6.0     -3.0      0.0      3.0      6.0
+
+#     covariance matrix:
+
+#         A      B      C
+#     A  2.5    5.0    7.5
+#     B  5.0   10.0   15.0
+#     C  7.5   15.0   22.5
+
+#     Cov(A,A) variance of feature A (with itself)
+#     Cov(A,B) covariance of A and B
+#     Cov(A,C) covariance of A and C
+#     '''
+
+#     #eigenval and eigenvec
+#     eigenvalues, eigenvectors = np.linalg.eig(cov_matrix)
+
+#     #sort eigenvalues and vectors
+#     sorted_indexes = np.argsort(eigenvalues[::-1]) #descending, to explain the most variance (highest vals to vecs)
+#     '''
+#     eigenvals   eigenvecs
+#     2.1         v2
+#     0.8         v1
+#     0.5         v3
+#     '''
+
+#     sorted_eigenvals = eigenvalues[sorted_indexes]
+#     sorted_eigenvecs = eigenvectors[:, sorted_indexes]
+
+#     n_selected_eigenvecs = sorted_eigenvecs[:, n_componens]
+
+#     #transform the data by projecting it to PCAs #new eigenvecs are now the new axes, dot projects the features to the new axes
+#     features_transformed = np.dot(features_centered, n_selected_eigenvecs)
+
 
 # FILTER
 
@@ -296,7 +465,10 @@ for i in range(x.shape[1]):
 
 x = x.reshape((x.shape[0], -1))
 
-pca = PCA()
+print(x.shape)
+
+pca = My_PCA(n_comps=16)
+#pca = PCA(n_components=16)
 #reg = LogisticRegression(penalty='l1', solver='liblinear')
 #reg = RandomForestClassifier()
 reg = MLPClassifier(hidden_layer_sizes=(20, 10), max_iter=16000)
