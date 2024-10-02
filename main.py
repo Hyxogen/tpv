@@ -186,16 +186,9 @@ class My_PCA(BaseEstimator, TransformerMixin):
             current_centered_feature[i] -= current_centered_feature[i].mean()
 
         #compute covariance matrix
-        #cov_matrix = np.matmul(current_centered_feature, current_centered_feature.T) / (current_centered_feature.shape[0] - 1)
+        #cov_matrix2 = np.matmul(current_centered_feature, current_centered_feature.T) / (current_centered_feature.shape[1] - 1)
         cov_matrix = np.cov(current_centered_feature) #T is to compute between features instead of datapoints, (rows)
-        #print("shape1 {}".format(cov_matrix.shape))
-        #print(cov_matrix)
 
-        #print("shape2 {}".format(cov_matrix2.shape))
-        #print(cov_matrix2)
-
-        #print("diff")
-        #print(cov_matrix - cov_matrix2)
         '''
         feature vec after transposing
                      sample(1)    sample(2) ... sample(m)
@@ -471,7 +464,8 @@ pca = My_PCA(n_comps=16)
 #pca = PCA(n_components=16)
 #reg = LogisticRegression(penalty='l1', solver='liblinear')
 #reg = RandomForestClassifier()
-reg = MLPClassifier(hidden_layer_sizes=(20, 10), max_iter=16000)
+#TODO remove random state
+reg = MLPClassifier(random_state=42, hidden_layer_sizes=(20, 10), max_iter=16000)
 
 pipeline = Pipeline([("PCA", pca), ("LogisticRegression", reg)])
 
