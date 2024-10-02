@@ -1,6 +1,7 @@
 #!/usr/bin/python
 import numpy as np
 import mne
+import sys
 import matplotlib.pyplot as plt
 from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
@@ -19,7 +20,7 @@ predict = [
 "files/S018/S018R11.edf",
 "files/S042/S042R07.edf",
 "files/S042/S042R03.edf",
-"files/S042/S042R11.edf",
+#"files/S042/S042R11.edf",
 #"files/S052/S052R07.edf",
 #"files/S052/S052R03.edf",
 #"files/S052/S052R11.edf",
@@ -45,234 +46,250 @@ predict = [
 ]
 
 files = [
-"files/S018/S018R07.edf",
-"files/S018/S018R03.edf",
-"files/S104/S104R03.edf",
-"files/S091/S091R11.edf",
-"files/S091/S091R03.edf",
-"files/S091/S091R07.edf",
-"files/S082/S082R11.edf",
-"files/S082/S082R03.edf",
-"files/S082/S082R07.edf",
-"files/S048/S048R03.edf",
-"files/S048/S048R11.edf",
-"files/S048/S048R07.edf",
-"files/S038/S038R11.edf",
-"files/S038/S038R07.edf",
-"files/S038/S038R03.edf",
-"files/S040/S040R03.edf",
-"files/S040/S040R07.edf",
-"files/S040/S040R11.edf",
-"files/S093/S093R07.edf",
-"files/S093/S093R11.edf",
-"files/S093/S093R03.edf",
-"files/S047/S047R11.edf",
-"files/S047/S047R07.edf",
-"files/S047/S047R03.edf",
-"files/S102/S102R07.edf",
-"files/S102/S102R03.edf",
-"files/S102/S102R11.edf",
-"files/S083/S083R11.edf",
-"files/S083/S083R03.edf",
-"files/S083/S083R07.edf",
-"files/S034/S034R07.edf",
-"files/S034/S034R03.edf",
-"files/S034/S034R11.edf",
-"files/S041/S041R07.edf",
-"files/S041/S041R03.edf",
-"files/S041/S041R11.edf",
-"files/S035/S035R07.edf",
-"files/S035/S035R11.edf",
-#"files/S035/S035R03.edf",
-#"files/S060/S060R07.edf",
-#"files/S060/S060R11.edf",
-#"files/S060/S060R03.edf",
-#"files/S009/S009R11.edf",
-#"files/S009/S009R07.edf",
-#"files/S009/S009R03.edf",
-#"files/S045/S045R11.edf",
-#"files/S045/S045R07.edf",
-#"files/S045/S045R03.edf",
-#"files/S044/S044R03.edf",
-#"files/S044/S044R11.edf",
-#"files/S044/S044R07.edf",
-#"files/S029/S029R11.edf",
-#"files/S029/S029R03.edf",
-#"files/S029/S029R07.edf",
-#"files/S056/S056R03.edf",
-#"files/S056/S056R11.edf",
-#"files/S056/S056R07.edf",
-#"files/S076/S076R07.edf",
-#"files/S076/S076R03.edf",
-#"files/S076/S076R11.edf",
-#"files/S105/S105R07.edf",
-#"files/S105/S105R11.edf",
-#"files/S105/S105R03.edf",
-#"files/S106/S106R07.edf",
-#"files/S106/S106R03.edf",
-#"files/S106/S106R11.edf",
-#"files/S050/S050R07.edf",
-#"files/S050/S050R03.edf",
-#"files/S050/S050R11.edf",
-#"files/S099/S099R07.edf",
-#"files/S099/S099R03.edf",
-#"files/S099/S099R11.edf",
-#"files/S031/S031R03.edf",
-#"files/S031/S031R11.edf",
-#"files/S031/S031R07.edf",
-#"files/S061/S061R03.edf",
-#"files/S061/S061R07.edf",
-#"files/S061/S061R11.edf",
-#"files/S059/S059R07.edf",
-#"files/S059/S059R11.edf",
-#"files/S059/S059R03.edf",
-#"files/S072/S072R07.edf",
-#"files/S072/S072R03.edf",
-#"files/S072/S072R11.edf",
-#"files/S023/S023R03.edf",
-#"files/S023/S023R11.edf",
-#"files/S023/S023R07.edf",
-#"files/S043/S043R11.edf",
-#"files/S043/S043R07.edf",
-#"files/S043/S043R03.edf",
-#"files/S073/S073R07.edf",
-#"files/S073/S073R11.edf",
-#"files/S073/S073R03.edf",
-#"files/S046/S046R11.edf",
-#"files/S046/S046R07.edf",
-#"files/S046/S046R03.edf",
-#"files/S075/S075R07.edf",
-#"files/S075/S075R11.edf",
-#"files/S075/S075R03.edf",
-#"files/S011/S011R03.edf",
-#"files/S011/S011R07.edf",
-#"files/S011/S011R11.edf",
-#"files/S066/S066R03.edf",
-#"files/S066/S066R07.edf",
-#"files/S066/S066R11.edf",
-#"files/S006/S006R11.edf",
-#"files/S006/S006R03.edf",
-#"files/S006/S006R07.edf",
-#"files/S021/S021R11.edf",
-#"files/S021/S021R03.edf",
-#"files/S021/S021R07.edf",
-#"files/S010/S010R03.edf",
-#"files/S010/S010R07.edf",
-#"files/S010/S010R11.edf",
-#"files/S008/S008R07.edf",
-#"files/S008/S008R03.edf",
-#"files/S008/S008R11.edf",
-#"files/S089/S089R03.edf",
-#"files/S089/S089R07.edf",
-#"files/S089/S089R11.edf",
-#"files/S058/S058R07.edf",
-#"files/S058/S058R11.edf",
-#"files/S058/S058R03.edf",
-#"files/S090/S090R03.edf",
-#"files/S090/S090R07.edf",
+        "files/S018/S018R07.edf",
+        "files/S018/S018R03.edf",
+        "files/S104/S104R03.edf",
+        "files/S091/S091R11.edf",
+        "files/S091/S091R03.edf",
+        "files/S091/S091R07.edf",
+        "files/S082/S082R11.edf",
+        "files/S082/S082R03.edf",
+        "files/S082/S082R07.edf",
+        "files/S048/S048R03.edf",
+        "files/S048/S048R11.edf",
+        "files/S048/S048R07.edf",
+        "files/S038/S038R11.edf",
+        "files/S038/S038R07.edf",
+        "files/S038/S038R03.edf",
+        "files/S040/S040R03.edf",
+        "files/S040/S040R07.edf",
+        "files/S040/S040R11.edf",
+        "files/S093/S093R07.edf",
+        "files/S093/S093R11.edf",
+        "files/S093/S093R03.edf",
+        "files/S047/S047R11.edf",
+        "files/S047/S047R07.edf",
+        "files/S047/S047R03.edf",
+        "files/S102/S102R07.edf",
+        "files/S102/S102R03.edf",
+        "files/S102/S102R11.edf",
+        "files/S083/S083R11.edf",
+        "files/S083/S083R03.edf",
+        "files/S083/S083R07.edf",
+        "files/S034/S034R07.edf",
+        "files/S034/S034R03.edf",
+        "files/S034/S034R11.edf",
+        "files/S041/S041R07.edf",
+        "files/S041/S041R03.edf",
+        "files/S041/S041R11.edf",
+        "files/S035/S035R07.edf",
+        "files/S035/S035R11.edf",
+        "files/S035/S035R03.edf",
+        "files/S060/S060R07.edf",
+        "files/S060/S060R11.edf",
+        "files/S060/S060R03.edf",
+        "files/S009/S009R11.edf",
+        "files/S009/S009R07.edf",
+        "files/S009/S009R03.edf",
+        "files/S045/S045R11.edf",
+        "files/S045/S045R07.edf",
+        "files/S045/S045R03.edf",
+        "files/S044/S044R03.edf",
+        "files/S044/S044R11.edf",
+        "files/S044/S044R07.edf",
+        "files/S029/S029R11.edf",
+        "files/S029/S029R03.edf",
+        "files/S029/S029R07.edf",
+        "files/S056/S056R03.edf",
+        "files/S056/S056R11.edf",
+        "files/S056/S056R07.edf",
+        "files/S076/S076R07.edf",
+        "files/S076/S076R03.edf",
+        #"files/S076/S076R11.edf",
+        #"files/S105/S105R07.edf",
+        #"files/S105/S105R11.edf",
+        #"files/S105/S105R03.edf",
+        #"files/S106/S106R07.edf",
+        #"files/S106/S106R03.edf",
+        #"files/S106/S106R11.edf",
+        #"files/S050/S050R07.edf",
+        #"files/S050/S050R03.edf",
+        #"files/S050/S050R11.edf",
+        #"files/S099/S099R07.edf",
+        #"files/S099/S099R03.edf",
+        #"files/S099/S099R11.edf",
+        #"files/S031/S031R03.edf",
+        #"files/S031/S031R11.edf",
+        #"files/S031/S031R07.edf",
+        #"files/S061/S061R03.edf",
+        #"files/S061/S061R07.edf",
+        #"files/S061/S061R11.edf",
+        #"files/S059/S059R07.edf",
+        #"files/S059/S059R11.edf",
+        #"files/S059/S059R03.edf",
+        #"files/S072/S072R07.edf",
+        #"files/S072/S072R03.edf",
+        #"files/S072/S072R11.edf",
+        #"files/S023/S023R03.edf",
+        #"files/S023/S023R11.edf",
+        #"files/S023/S023R07.edf",
+        #"files/S043/S043R11.edf",
+        #"files/S043/S043R07.edf",
+        #"files/S043/S043R03.edf",
+        #"files/S073/S073R07.edf",
+        #"files/S073/S073R11.edf",
+        #"files/S073/S073R03.edf",
+        #"files/S046/S046R11.edf",
+        #"files/S046/S046R07.edf",
+        #"files/S046/S046R03.edf",
+        #"files/S075/S075R07.edf",
+        #"files/S075/S075R11.edf",
+        #"files/S075/S075R03.edf",
+        #"files/S011/S011R03.edf",
+        #"files/S011/S011R07.edf",
+        #"files/S011/S011R11.edf",
+        #"files/S066/S066R03.edf",
+        #"files/S066/S066R07.edf",
+        #"files/S066/S066R11.edf",
+        #"files/S006/S006R11.edf",
+        #"files/S006/S006R03.edf",
+        #"files/S006/S006R07.edf",
+        #"files/S021/S021R11.edf",
+        #"files/S021/S021R03.edf",
+        #"files/S021/S021R07.edf",
+        #"files/S010/S010R03.edf",
+        #"files/S010/S010R07.edf",
+        #"files/S010/S010R11.edf",
+        #"files/S008/S008R07.edf",
+        #"files/S008/S008R03.edf",
+        #"files/S008/S008R11.edf",
+        #"files/S089/S089R03.edf",
+        #"files/S089/S089R07.edf",
+        #"files/S089/S089R11.edf",
+        #"files/S058/S058R07.edf",
+        #"files/S058/S058R11.edf",
+        #"files/S058/S058R03.edf",
+        #"files/S090/S090R03.edf",
+        #"files/S090/S090R07.edf",
 ]
+
+class Printer(BaseEstimator, TransformerMixin):
+    def __init__(self, n_comps = 2):
+        return 
+
+    def fit(self, x_features, stupid):
+        print("shape of features: {}".format(x_features.shape))
+        return self
+
+    def transform(self, x_features, y=None):
+        return x_features
+
+def flipstuff(v):
+    max_abs_v_rows = np.argmax(np.abs(v), axis=1)
+    shift = np.arange(v.shape[0])
+    indices = max_abs_v_rows + shift * v.shape[1]
+    signs = np.sign(np.take(np.reshape(v, (-1,)), indices, axis=0))
+    v *= signs[:, np.newaxis]
+    return v
+
 
 class My_PCA(BaseEstimator, TransformerMixin):
     def __init__(self, n_comps = 2): #amount of PCAs to select, we have to check later for how much percentage do they cover
         self.n_comps = n_comps
-        self.current_selected_eigenvectors = None
+        self.basis = None
         self.current_centered_feature = None
 
-    def fit(self, x_features):
+    def fit(self, x_features, y=None):
+        self.mean_ = np.mean(x_features, axis=0)
+        # When X is a scipy sparse matrix, self.mean_ is a numpy matrix, so we need
+        # to transform it to a 1D array. Note that this is not the case when X
+        # is a scipy sparse array.
+        # TODO: remove the following two lines when scikit-learn only depends
+        # on scipy versions that no longer support scipy.sparse matrices.
+        self.mean_ = np.reshape(np.asarray(self.mean_), (-1,))
+
+        n_samples=x_features.shape[0]
+        C = x_features.T @ x_features
+        C -= (
+            n_samples
+            * np.reshape(self.mean_, (-1, 1))
+            * np.reshape(self.mean_, (1, -1))
+        )
+        C /= n_samples - 1
+
         x_features = x_features.T
-        current_centered_feature = x_features
+        zerodx = x_features
 
         for i in range(len(x_features)):
-            current_centered_feature[i] -= current_centered_feature[i].mean()
+            zerodx[i] -= zerodx[i].mean()
+
 
         #compute covariance matrix
-        #cov_matrix2 = np.matmul(current_centered_feature, current_centered_feature.T) / (current_centered_feature.shape[1] - 1)
-        cov_matrix = np.cov(current_centered_feature) #T is to compute between features instead of datapoints, (rows)
+        #cov_matrix2 = np.matmul(zerodx, zerodx.T) / (zerodx.shape[1] - 1)
+        cov_matrix = np.cov(zerodx) #T is to compute between features instead of datapoints, (rows)
 
-        '''
-        feature vec after transposing
-                     sample(1)    sample(2) ... sample(m)
-        attribute 1 
-        attribute 2
-        ...
-        attribute n
-        '''
-
-        '''
-        feature vec
-        [ X_11, X_12, X_13, ..., X_1m ]
-        [ X_21, X_22, X_23, ..., X_2m ]
-        [ X_31, X_32, X_33, ..., X_3m ]
-                ...
-        [ X_n1, X_n2, X_n3, ..., X_nm ]
-
-
-        centered transposed data
-        Sample1  Sample2  Sample3  Sample4  Sample5
-        A   -2.0     -1.0      0.0      1.0      2.0
-        B   -4.0     -2.0      0.0      2.0      4.0
-        C   -6.0     -3.0      0.0      3.0      6.0
-
-        covariance matrix:
-
-            A      B      C
-        A  2.5    5.0    7.5
-        B  5.0   10.0   15.0
-        C  7.5   15.0   22.5
-
-        Cov(A,A) variance of feature A (with itself)
-        Cov(A,B) covariance of A and B
-        Cov(A,C) covariance of A and C
-        '''
+        cov_matrix = C
 
         #eigenval and eigenvec
-        eigenvalues, eigenvectors = np.linalg.eigh(cov_matrix) #eig is making imaginary numbers because of floating point precisions
-        print("eigenvalues({}): {}".format(len(eigenvalues), eigenvalues.shape))
-        print("eigevectors({}): {}".format(len(eigenvectors), eigenvectors.shape))
+        #eig is making imaginary numbers because of floating point precisions
+        eigvals, eigvecs = np.linalg.eigh(cov_matrix)
+
+        #eigvals and eigvecs pair up
+        #eigvals are sorted in ascending order
+        #eigvecs are column vectors
+        eigvals = np.reshape(np.asarray(eigvals), (-1,))
+        eigvecs = np.asarray(eigvecs)
+
+        #sort eigvals and eigvecs in descending order
+        eigvals = np.flip(eigvals, axis=0)
+        eigvecs = np.flip(eigvecs, axis=1)
+
+        eigvals[eigvals < 0.0] = 0.0
+
+        Vt = eigvecs.T
+
+        #Vt = flipstuff(Vt)
+        
+        self.basis = np.asarray(Vt[:self.n_comps, :], copy=True)
+        #self.basis = np.asarray(tmp.T[:self.n_comps].T, copy=True)
+        #print("ours")
+        #print(self.basis)
+        #print("---")
+        #print()
+        
         '''
         5.0001 4.9999
         4.9999 5.0000
         '''
+
         #sort eigenvalues and vectors, these return indices, not values of eigenvals in descending order
-        sorted_eigen_val_indexes = eigenvalues[::-1]
         '''
         eigenvals   eigenvecs
         2.1         v2
         0.8         v1
         0.5         v3
         '''
-
-    
-        sorted_eigenvecs = []
-        for i in range(len(sorted_eigen_val_indexes)):
-            sorted_eigenvecs.append(eigenvectors[:, i])
-
-        sorted_eigenvecs = np.array(sorted_eigenvecs)
-        self.current_selected_eigenvectors = sorted_eigenvecs[:, :self.n_comps]
-        print(self.current_selected_eigenvectors.shape)
+        #print(np.cov(np.matmul(eigvecs.T, zerodx)))
+        return self
 
 
     def transform(self, x_features):
-        x_features = x_features.T
-        current_centered_feature = x_features
+        X_transformed = x_features @ self.basis.T
 
-        #transform the data by projecting it to PCAs #new eigenvecs are now the new axes, dot projects the features to the new axes
-        for i in range(len(x_features)):
-            current_centered_feature[i] -= current_centered_feature[i].mean()
+        X_transformed -= np.reshape(self.mean_, (1, -1)) @ self.basis.T
 
-        #features_transformed = np.dot(current_centered_feature, self.current_selected_eigenvectors)
-        print("centered: {} eig: {}".format(current_centered_feature.shape,
-                                            self.current_selected_eigenvectors.shape))
-        features_transformed = np.matmul(self.current_selected_eigenvectors.T, current_centered_feature)
-        print(features_transformed.shape)
-        return features_transformed.T
+        #x_features = x_features.T
+        #zerodx = x_features
 
+        ##transform the data by projecting it to PCAs #new eigenvecs are now the new axes, dot projects the features to the new axes
+        #for i in range(len(x_features)):
+        #    zerodx[i] -= zerodx[i].mean()
 
-    #we could also add the transformed features to a self.current_transformed_features
-    def fit_transform(self, x_features, y=None):
-        self.fit(x_features)
-        transformed_features = self.transform(x_features)
-        return transformed_features
+        ##features_transformed = np.dot(current_centered_feature, self.current_selected_eigenvectors)
+        #res = np.matmul(self.basis.T, zerodx).T
+
+        return X_transformed
+
 
 
 
@@ -460,14 +477,20 @@ x = x.reshape((x.shape[0], -1))
 
 print(x.shape)
 
-pca = My_PCA(n_comps=16)
-#pca = PCA(n_components=16)
-#reg = LogisticRegression(penalty='l1', solver='liblinear')
+pca = My_PCA(n_comps=42)
+#pca = PCA(n_components=42, svd_solver="covariance_eigh")
+reg = LogisticRegression(penalty='l1', solver='liblinear')
 #reg = RandomForestClassifier()
 #TODO remove random state
 reg = MLPClassifier(random_state=42, hidden_layer_sizes=(20, 10), max_iter=16000)
 
-pipeline = Pipeline([("PCA", pca), ("LogisticRegression", reg)])
+np.set_printoptions(threshold=sys.maxsize)
+#print("theirs")
+#print(PCA(n_components=72).fit(x).components_)
+#print("---")
+#print()
+
+pipeline = Pipeline([("PCA", pca), ("Printer", Printer()), ("LogisticRegression", reg)])
 
 pipeline.fit(x, y)
 
