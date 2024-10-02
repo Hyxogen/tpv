@@ -306,6 +306,46 @@ class My_PCA(BaseEstimator, TransformerMixin):
 
 
 
+def plot_raw_and_filtered(raw, filtered, channel='Cz..', duration=5):
+	"""
+	Plots raw and filtered EEG signals for a specified channel and duration.
+	Parameters:
+	raw: Raw EEG data 
+	filtered: filtered EEG data
+	channel: channel name to plot
+	duration: duration in seconds to plot
+	"""
+	#select data
+	raw_data, times = raw.copy().pick_channels([channel]).get_data(return_times=True)
+	filtered_data, _ = filtered.copy().pick_channels([channel]).get_data(return_times=True)
+
+	#define time window
+	start = 0
+	end = duration  # seconds
+	sfreq = raw.info['sfreq']
+	start_sample = int(start * sfreq)
+	end_sample = int(end * sfreq)
+
+	#plot
+	plt.figure(figsize=(15, 6))
+
+	plt.subplot(2, 1, 1)
+	plt.plot(times[start_sample:end_sample], raw_data[0, start_sample:end_sample], color='blue')
+	plt.title(f'Raw EEG Signal - Channel {channel}')
+	plt.xlabel('Time (s)')
+	plt.ylabel('Amplitude (µV)')
+	plt.grid(True)
+
+	plt.subplot(2, 1, 2)
+	plt.plot(times[start_sample:end_sample], filtered_data[0, start_sample:end_sample], color='green')
+	plt.title(f'Filtered EEG Signal (0.1-30Hz, Notch 50Hz) - Channel {channel}')
+	plt.xlabel('Time (s)')
+	plt.ylabel('Amplitude (µV)')
+	plt.grid(True)
+
+	plt.tight_layout()
+	plt.show()
+
 
 
 def filter_raw(data):
@@ -321,6 +361,8 @@ def filter_raw(data):
 
 	return filtered
 
+
+
 def load_raw(files):
 	'''
 	Reads EEG data from .edf files, specifies which channels to read. (channels used for this project can be found in the paper)
@@ -331,17 +373,19 @@ def load_raw(files):
 	return raws
 
 
+
+
 print("loading data")
 raws = load_raw(files)
-
 raw_filtered = []
 
 print("filtering...")
 for raw in raws:
 	raw.load_data()
 	raw_filtered.append(filter_raw(raw))
-
 print("done filtering")
+plot_raw_and_filtered(raws[0], raw_filtered[0], channel='Cz..', duration=5)
+
 raws = None #free up memory
 
 
@@ -356,13 +400,17 @@ def get_features(epochs, lofreq, hifreq, epoch_type, sfreq):
 	feat_mat = []
 	y = []
 	for idx, epoch in enumerate(epochs):
-		mean = np.mean(epoch, axis=0) #is this correct mean? calculating the mean across channels for each time point
-		#mean = np.mean(epoch, axis=0) #this calculates mean over time for each channel?
+		# break 
 
+		mean_0 = np.mean(epoch, axis=0) #is this correct mean? calculating the mean across channels for each time point
+		mean_1 = np.mean(epoch, axis=1) #this calculates mean over time for each channel?
+
+		print(epoch)
+		print(f'{mean_0} with axis=0, {mean_1} with axis=1')
 		filtered = mne.filter.filter_data(epoch, method="iir", l_freq=lofreq, h_freq=hifreq,
 								 sfreq=sfreq)
 
-		activation = filtered - mean
+		activation = filtered - mean_0
 
 		energy = np.sum(activation ** 2, axis=1) #is axis correct here?
 		power = energy / (len(epoch) * sfreq)
@@ -370,13 +418,16 @@ def get_features(epochs, lofreq, hifreq, epoch_type, sfreq):
 		event_type = epochs.events[idx][2] - 1
 		#is there epochs.event_id, epochs.selection?
 		#https://mne.tools/1.7/generated/mne.Epochs.html
-		features = np.hstack((mean, energy, power)) #puts matrices next to eachother horizontally 
+		features = np.hstack((mean_0, energy, power)) #puts matrices next to eachother horizontally 
 		y.append(event_type)
 
 		feat_mat.append(features)
 		# print(f'{feat_mat} is feat matrix')
 		# print(f'{y} is the event type prediction')
-		# if idx == 1:
+		if idx == 4:
+			raw_epoch = epochs[idx].copy().pick_channels(['Cz..'])
+			filtered_epoch = mne.filter.filter_data(epochs[idx], sfreq=sfreq, l_freq=lofreq, h_freq=hifreq, method="iir")
+			plot_raw_and_filtered(raw_epoch, filtered_epoch, channel='Cz..', duration=5)
 		# 	# scatter_plot_epochs(feat_mat[0], feat_mat[5])
 		# 	heatmap(features)
 		# 	break 
@@ -409,7 +460,19 @@ def get_all_features(data):
 	#ica.fit(erds)
 	#ica.fit(mrcp)
 
-	ers_feats, ers_y = get_features(erss, 8, 30, 1, sfreq)
+	#check whether mean calculation is correct:
+
+	check_selected_channels = ['Cz..', 'C1..']
+	# check_selected_channels = ['Cz..']
+	check_selected_time_points = 2 #first 5 time points
+
+	selected_epoch_index = 0 #check the first epoch
+	selected_epoch = erss[selected_epoch_index].get_data(picks=check_selected_channels)[:, :check_selected_time_points]
+	print(f'{selected_epoch} is the selected epoch')
+
+	# ers_feats, ers_y = get_features(erss, 8, 30, 1, sfreq)
+	ers_feats = None
+	ers_y = None
 	#eds_feats, eds_y = get_features(erds, 8, 30, 2, sfreq)
 	#mrcp_feats, mrcp_y = get_features(erds, 3, 30, 3, sfreq)
 
@@ -506,6 +569,7 @@ def scatter_plot_epochs(feat_mat_epoch1, feat_mat_epoch2):
 	plt.show()
 
 
+
 # def plot_features(features, labels):
 # 	#mean, energy, and power stacked together
 # 	# mean_values = features[:, 0]  #first col mean
@@ -571,7 +635,7 @@ def get(arr):
 
 		for i in b:
 			y.append(i)
-		print("got features")
+		# print("got features")
 		# plot_features(x[:-1], y[:-1])
 		# break
 	
@@ -585,7 +649,8 @@ pca = PCA(n_components=2)
 ft_pca = My_PCA()
 
 scaler = StandardScaler()
-reg = LogisticRegression(penalty='l1', solver='liblinear')
+# reg = LogisticRegression(penalty='l1', solver='liblinear')
+# reg = 
 
 pipeline_orig_pca = Pipeline([("Scaler", scaler), ("CSP", pca), ("LogisticRegression", reg)])
 pipeline = Pipeline([("Scaler", scaler), ("CSP", ft_pca), ("LogisticRegression", reg)])
