@@ -14,6 +14,7 @@ from sklearn.base import BaseEstimator, TransformerMixin
 
 from dataset_preprocessor import Preprocessor
 
+import joblib
 
 mne.set_log_level(verbose='WARNING')
 
@@ -194,6 +195,8 @@ def flipstuff(v):
 	signs = np.sign(np.take(np.reshape(v, (-1,)), indices, axis=0))
 	v *= signs[:, np.newaxis]
 	return v
+
+
 
 
 class My_PCA(BaseEstimator, TransformerMixin):
@@ -419,7 +422,70 @@ class My_PCA(BaseEstimator, TransformerMixin):
 # print("done filtering")
 # raws = None
 
+
+
+
+
+
+
 # EXTRACT FEATURES
+
+
+
+#FEATURE EXTRACTOR CLASS
+
+
+
+
+#EPOCH PROCESSOR CLASS
+
+
+
+
+#PIPELINE CLASS WHICH WOULD SERVE AS ORCHESTRATOR BETWEEN FEATURE AND EPOCH PROCESS
+class PipelineWrapper:
+	def __init__(self, n_comps=2, mode='training'):
+		self.scalers = {} #here we use fit_transform for each scaler
+		self.pca = My_PCA(n_comps=n_comps)
+		self.model = LogisticRegression() #can be the neural net later
+		self.is_training_mode = mode #maybe later a bool
+		self.pipeline = Pipeline([("PCA", self.pca), ("Printer", Printer()), ("LogisticRegression", self.model)])
+
+
+	def fit_scalers(self, x_train):
+		for i in range(x.shape[1]):
+			self.scalers[i] = StandardScaler()
+			x_train[:, i, :] = self.scalers[i].fit_transform(x_train[:, i, :])
+		return x_train
+
+
+	def fit(self, x_train, y_train):
+		self.fit_scalers(x_train) #this also stores the individual scalers which we can then save for the prediction
+		self.pipeline.fit(x_train, y_train)
+	
+
+	def predict(self, x_test, y):
+		x_test_scaled = self.fit_scalers(x_test)
+		return self.pipeline.predict(x_test_scaled)
+
+
+	def save_pipeline(self, filepath):
+		joblib.dump({
+			'scalers': self.scalers,
+			'pipeline': self.pipeline
+		}, filepath)
+
+
+	def load_pipeline(self, filepath):
+		data = 	joblib.load(filepath)
+		self.scalers = data['scalers']
+		self.pipeline = data['pipeline']
+
+
+
+
+#MAIN HANDLER CLASS, ANALYSYS MANAGER
+
 
 
 ica = mne.preprocessing.ICA(method="infomax")
@@ -513,14 +579,15 @@ dataset_preprocessor.load_raw_data(data_path=files)
 new_filtered = dataset_preprocessor.filter_raw_data()
 
 # x, y = get(raw_filtered)
-x,y = get(new_filtered)
-scaler = StandardScaler()
+x, y = get(new_filtered)
+# scaler = StandardScaler()
 
 scalers = {}
 for i in range(x.shape[1]):
 	scalers[i] = StandardScaler()
 	x[:, i, :] = scalers[i].fit_transform(x[:, i, :])
 
+#why do we have to reshape it here?
 x = x.reshape((x.shape[0], -1))
 
 print(x.shape)

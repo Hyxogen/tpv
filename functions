@@ -1,12 +1,13 @@
 PCA
 	fit
 	transform
-	flippstuff
+	flippstuf
+
 	
 #preprocess data
-filter_raw
-load_raw
-ica(mne.preprocessing.ICA)
+#filter_raw
+#load_raw
+ica(mne.preprocessing.ICA)?
 
 
 
