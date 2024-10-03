@@ -1,0 +1,32 @@
+PCA
+	fit
+	transform
+	flippstuff
+	
+#preprocess data
+filter_raw
+load_raw
+ica(mne.preprocessing.ICA)
+
+
+
+@GET FEATURES MAIN CALL
+get
+@GET SEPARATE FEATURES->CREATING FEATURES VECTOR
+get_all_features
+@GET FEATURES-> gets the mean, energy, and power per feature
+get_features
+
+
+
+#train class/prediction class
+scalers
+pipeline creation
+px,py get(filtered_predict)
+for_loop
+px_reshape
+
+res_pipelinepredict
+
+accuracy
+
