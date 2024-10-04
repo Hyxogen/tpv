@@ -204,10 +204,7 @@ def flipstuff(v):
 # EXTRACT FEATURES
 
 
-
 #FEATURE EXTRACTOR CLASS
-
-
 
 
 #EPOCH PROCESSOR CLASS
@@ -219,7 +216,7 @@ def flipstuff(v):
 
 ica = mne.preprocessing.ICA(method="infomax")
 
-def get_features(epochs, tmin, tmax, lofreq, hifreq, epoch_type, sfreq):
+def create_feature_vectors(epochs, tmin, tmax, lofreq, hifreq, epoch_type, sfreq):
 	feat_mat = []
 	y = []
 	epochs = epochs.copy().crop(tmin=tmin, tmax=tmax)
@@ -257,12 +254,10 @@ def get_features(epochs, tmin, tmax, lofreq, hifreq, epoch_type, sfreq):
 
 
 
-def get_all_features(data):
+def epoch_extraction(data):
 	event_id = {"T1": 1, "T2": 2}
-	events, event_dict = mne.events_from_annotations(data)
-	
-	sfreq = data.info["sfreq"]
-
+	events, _ = mne.events_from_annotations(data)
+	sfreq = data.info["sfreq"] #sampling frequency in hertz.
 	epochs = mne.Epochs(data, events, event_id=event_id, tmin=-2, tmax=5.1,
 						baseline=None, preload=True)
 	
@@ -274,9 +269,9 @@ def get_all_features(data):
 	#ica.fit(mrcp)
 
 	#different types of analysis per epoch
-	mrcp_feats, mrcp_y = get_features(epochs, -2, 0, 3, 30, 3, sfreq)
-	erd_feats, erd_y = get_features(epochs, -2, 0, 8, 30, 2, sfreq)
-	ers_feats, ers_y = get_features(epochs, 4.1, 5.1, 8, 30, 1, sfreq)
+	mrcp_feats, mrcp_y = create_feature_vectors(epochs, -2, 0, 3, 30, 3, sfreq)
+	erd_feats, erd_y = create_feature_vectors(epochs, -2, 0, 8, 30, 2, sfreq)
+	ers_feats, ers_y = create_feature_vectors(epochs, 4.1, 5.1, 8, 30, 1, sfreq)
 
 
 	res = np.concatenate((ers_feats, erd_feats, mrcp_feats), axis=1)
@@ -288,7 +283,7 @@ def get(arr):
 	y = []
 
 	for filtered in arr:
-		x,  epochs = get_all_features(filtered)
+		x,  epochs = epoch_extraction(filtered)
 		print("got some features")
 		
 		for i in x:
@@ -305,9 +300,9 @@ def get(arr):
 #beginning of preprocessor class
 dataset_preprocessor = Preprocessor()
 dataset_preprocessor.load_raw_data(data_path=files)
-new_filtered = dataset_preprocessor.filter_raw_data()
+filtered_data = dataset_preprocessor.filter_raw_data()
 
-x_train, y_train = get(new_filtered)
+x_train, y_train = get(filtered_data)
 pipeline_custom = PipelineWrapper(n_comps=42)
 pipeline_custom.fit(x_train, y_train)
 

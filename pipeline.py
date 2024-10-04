@@ -32,7 +32,6 @@ class PipelineWrapper:
 
 	def fit_scalers(self, x_train):
 		x_train_copy = x_train.copy()
-		print(f'{x_train_copy} is the x before fitting with class')
 		for i in range(x_train.shape[1]):
 			self.scalers[i] = StandardScaler()
 			x_train_copy[:, i, :] = self.scalers[i].fit_transform(x_train[:, i, :])

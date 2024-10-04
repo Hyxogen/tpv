@@ -14,9 +14,9 @@ ica(mne.preprocessing.ICA)?
 @GET FEATURES MAIN CALL
 get
 @GET SEPARATE FEATURES->CREATING FEATURES VECTOR
-get_all_features
+epoch_extraction
 @GET FEATURES-> gets the mean, energy, and power per feature
-get_features
+create_feature_vectors
 
 
 
