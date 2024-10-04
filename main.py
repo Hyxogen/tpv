@@ -13,7 +13,7 @@ from sklearn.neural_network import MLPClassifier
 from sklearn.base import BaseEstimator, TransformerMixin
 
 from dataset_preprocessor import Preprocessor
-
+from pipeline import PipelineWrapper
 import joblib
 
 mne.set_log_level(verbose='WARNING')
@@ -443,43 +443,44 @@ class My_PCA(BaseEstimator, TransformerMixin):
 
 
 #PIPELINE CLASS WHICH WOULD SERVE AS ORCHESTRATOR BETWEEN FEATURE AND EPOCH PROCESS
-class PipelineWrapper:
-	def __init__(self, n_comps=2, mode='training'):
-		self.scalers = {} #here we use fit_transform for each scaler
-		self.pca = My_PCA(n_comps=n_comps)
-		self.model = LogisticRegression() #can be the neural net later
-		self.is_training_mode = mode #maybe later a bool
-		self.pipeline = Pipeline([("PCA", self.pca), ("Printer", Printer()), ("LogisticRegression", self.model)])
+# class PipelineWrapper:
+# 	def __init__(self, n_comps=2, mode='training'):
+# 		#if we are in prediction mode, we should load the pipeline first
+# 		self.scalers = {} #here we use fit_transform for each scaler
+# 		self.is_training_mode = mode #maybe later a bool
+# 		self.pipeline = Pipeline([("PCA", self.pca), ("Printer", Printer()), ("LogisticRegression", self.model)])
+# 		self.pca = My_PCA(n_comps=n_comps)
+# 		self.model = LogisticRegression() #can be the neural net later
 
 
-	def fit_scalers(self, x_train):
-		for i in range(x.shape[1]):
-			self.scalers[i] = StandardScaler()
-			x_train[:, i, :] = self.scalers[i].fit_transform(x_train[:, i, :])
-		return x_train
+# 	def fit_scalers(self, x_train):
+# 		for i in range(x.shape[1]):
+# 			self.scalers[i] = StandardScaler()
+# 			x_train[:, i, :] = self.scalers[i].fit_transform(x_train[:, i, :])
+# 		return x_train
 
 
-	def fit(self, x_train, y_train):
-		self.fit_scalers(x_train) #this also stores the individual scalers which we can then save for the prediction
-		self.pipeline.fit(x_train, y_train)
+# 	def fit(self, x_train, y_train):
+# 		self.fit_scalers(x_train) #this also stores the individual scalers which we can then save for the prediction
+# 		self.pipeline.fit(x_train, y_train)
 	
 
-	def predict(self, x_test, y):
-		x_test_scaled = self.fit_scalers(x_test)
-		return self.pipeline.predict(x_test_scaled)
+# 	def predict(self, x_test, y):
+# 		x_test_scaled = self.fit_scalers(x_test)
+# 		return self.pipeline.predict(x_test_scaled)
 
 
-	def save_pipeline(self, filepath):
-		joblib.dump({
-			'scalers': self.scalers,
-			'pipeline': self.pipeline
-		}, filepath)
+# 	def save_pipeline(self, filepath):
+# 		joblib.dump({
+# 			'scalers': self.scalers,
+# 			'pipeline': self.pipeline
+# 		}, filepath)
 
 
-	def load_pipeline(self, filepath):
-		data = 	joblib.load(filepath)
-		self.scalers = data['scalers']
-		self.pipeline = data['pipeline']
+# 	def load_pipeline(self, filepath):
+# 		data = 	joblib.load(filepath)
+# 		self.scalers = data['scalers']
+# 		self.pipeline = data['pipeline']
 
 
 
@@ -579,25 +580,35 @@ dataset_preprocessor.load_raw_data(data_path=files)
 new_filtered = dataset_preprocessor.filter_raw_data()
 
 # x, y = get(raw_filtered)
-x, y = get(new_filtered)
+x_train, y = get(new_filtered)
 # scaler = StandardScaler()
 
-scalers = {}
-for i in range(x.shape[1]):
-	scalers[i] = StandardScaler()
-	x[:, i, :] = scalers[i].fit_transform(x[:, i, :])
+#THIS IS WHERE THE PIPELINE WRAPPER COMES INTO PLAY
+# scalers = {}
+# print(f'{x.shape} is the shape of x')
+# for i in range(x.shape[1]):
+# 	scalers[i] = StandardScaler()
+# 	x[:, i, :] = scalers[i].fit_transform(x[:, i, :])
 
+
+pipeline_custom = PipelineWrapper()
+# print(f'{x.shape} before passing to fit scaler')
+
+# x_train = pipeline_custom.fit_scalers(x) #scalers are saved in the pipeline
 #why do we have to reshape it here?
-x = x.reshape((x.shape[0], -1))
+# x = x.reshape((x.shape[0], -1))
+# print(f'{x_train.shape} is the shape after)
+# x_train = x_train.reshape((x_train.shape[0], -1))
+# print(x.shape)
+# print(f'{x_train.shape} is x shape after reshaping')
 
-print(x.shape)
 
-pca = My_PCA(n_comps=42)
+##pca = My_PCA(n_comps=42)
 #pca = PCA(n_components=42, svd_solver="covariance_eigh")
-reg = LogisticRegression(penalty='l1', solver='liblinear')
+##reg = LogisticRegression(penalty='l1', solver='liblinear')
 #reg = RandomForestClassifier()
 #TODO remove random state
-reg = MLPClassifier(random_state=42, hidden_layer_sizes=(20, 10), max_iter=16000)
+##reg = MLPClassifier(random_state=42, hidden_layer_sizes=(20, 10), max_iter=16000)
 
 np.set_printoptions(threshold=sys.maxsize)
 #print("theirs")
@@ -605,9 +616,14 @@ np.set_printoptions(threshold=sys.maxsize)
 #print("---")
 #print()
 
-pipeline = Pipeline([("PCA", pca), ("Printer", Printer()), ("LogisticRegression", reg)])
+##pipeline = Pipeline([("PCA", pca), ("Printer", Printer()), ("LogisticRegression", reg)])
 
-pipeline.fit(x, y)
+##pipeline.fit(x, y)
+
+pipeline_custom.fit(x_train, y)
+
+
+
 
 # predict_raw = dataset_preprocessor.load_raw(predict)
 predict_raw = dataset_preprocessor.load_raw_data(data_path=predict)
@@ -622,12 +638,17 @@ predict_filtered = dataset_preprocessor.filter_raw_data()
 px, py = get(predict_filtered)
 
 
-for i in range(px.shape[1]):
-	px[:, i, :] = scalers[i].transform(px[:, i, :])
+# for i in range(px.shape[1]):
+# 	px[:, i, :] = scalers[i].transform(px[:, i, :])
 
-px = px.reshape((px.shape[0], -1))
+# for i in range(px.shape[1]):
+# 	px[:, i, :] = pipeline_custom.scalers[i].transform(px[:, i, :])
 
-res = pipeline.predict(px)
+
+# px = px.reshape((px.shape[0], -1))
+
+# res = pipeline.predict(px)
+res = pipeline_custom.predict(px)
 print(res)
 print(py)
 
