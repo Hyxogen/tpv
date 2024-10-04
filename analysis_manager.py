@@ -2,21 +2,23 @@
 #a central component which we could alter
 
 
+class AnalysisManager:
+	def __init__(self):
+		
+	def get(arr):
+			features = []
+			y = []
 
-def get(arr):
-		features = []
-		y = []
+			for filtered in arr:
+				x,  epochs = epoch_extraction(filtered)
+				print("got some features")
+				
+				for i in x:
+					features.append(i)
 
-		for filtered in arr:
-			x,  epochs = epoch_extraction(filtered)
-			print("got some features")
-			
-			for i in x:
-				features.append(i)
+				for i in epochs:
+					y.append(i)
 
-			for i in epochs:
-				y.append(i)
-
-		features = np.array(features)
-		print(features.shape)
-		return features, np.array(y)
+			features = np.array(features)
+			print(features.shape)
+			return features, np.array(y)
