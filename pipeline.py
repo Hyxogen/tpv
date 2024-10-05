@@ -21,7 +21,6 @@ class Printer(BaseEstimator, TransformerMixin):
 
 class PipelineWrapper:
 	def __init__(self, n_comps=2, pca=None, model=None, scalers=None):
-		#if we are in prediction mode, we should load the pipeline first
 		self.n_comps = n_comps
 		self.scalers = scalers if scalers is not None else {} #here we use fit_transform for each scaler
 		# self.is_training_mode = mode #maybe later a bool

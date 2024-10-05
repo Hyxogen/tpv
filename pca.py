@@ -59,27 +59,8 @@ class My_PCA(BaseEstimator, TransformerMixin):
 		Vt = eigvecs.T
 
 		#Vt = flipstuff(Vt)
-		
 		self.basis = np.asarray(Vt[:self.n_comps, :]) #there war copy=True here but not sure why would we need a copy
 		#self.basis = np.asarray(tmp.T[:self.n_comps].T, copy=True)
-		#print("ours")
-		#print(self.basis)
-		#print("---")
-		#print()
-		
-		'''
-		5.0001 4.9999
-		4.9999 5.0000
-		'''
-
-		#sort eigenvalues and vectors, these return indices, not values of eigenvals in descending order
-		'''
-		eigenvals   eigenvecs
-		2.1         v2
-		0.8         v1
-		0.5         v3
-		'''
-		#print(np.cov(np.matmul(eigvecs.T, zerodx)))
 		return self
 
 
