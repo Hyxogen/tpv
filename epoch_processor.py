@@ -4,8 +4,8 @@ import numpy as np
 from feature_extractor import FeatureExtractor
 
 class EpochProcessor:
-	def __init__(self):
-		self.feature_extractor = None 
+	def __init__(self, feature_extractor_instance):
+		self.feature_extractor = feature_extractor_instance 
 
 
 
@@ -17,10 +17,10 @@ class EpochProcessor:
 							baseline=None, preload=True)
 		return epochs, sfreq
 
-
+#feature extractor have self,y and self feature matrix
 	def process_epochs(self, filtered_eeg_data):
 		epochs, sfreq = self.extract_epochs(filtered_eeg_data)
-		self.feature_extractor = FeatureExtractor(epochs)
+		# self.feature_extractor = FeatureExtractor()
 		#ica.fit(data).apply(epochs)
 		# TODO we're probably not actually applying the ICA algo
 		# TODO use apply!

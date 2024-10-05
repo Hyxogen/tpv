@@ -14,6 +14,10 @@ from sklearn.base import BaseEstimator, TransformerMixin
 
 from dataset_preprocessor import Preprocessor
 from pipeline import PipelineWrapper
+from epoch_processor import EpochProcessor
+from feature_extractor import FeatureExtractor
+from analysis_manager import AnalysisManager
+
 import joblib
 
 mne.set_log_level(verbose='WARNING')
@@ -176,139 +180,29 @@ files = [
 		#"/files/S090/S090R03.edf",
 		#"/files/S090/S090R07.edf",
 ]
-
-class Printer(BaseEstimator, TransformerMixin):
-	def __init__(self, n_comps = 2):
-		return 
-
-	def fit(self, x_features, stupid):
-		print("shape of features: {}".format(x_features.shape))
-		return self
-
-	def transform(self, x_features, y=None):
-		return x_features
-
-def flipstuff(v):
-	max_abs_v_rows = np.argmax(np.abs(v), axis=1)
-	shift = np.arange(v.shape[0])
-	indices = max_abs_v_rows + shift * v.shape[1]
-	signs = np.sign(np.take(np.reshape(v, (-1,)), indices, axis=0))
-	v *= signs[:, np.newaxis]
-	return v
-
-
-
-
-
-
-# EXTRACT FEATURES
-
-
-#FEATURE EXTRACTOR CLASS
-
-
-#EPOCH PROCESSOR CLASS
-
-
-#MAIN HANDLER CLASS, ANALYSYS MANAGER
-
-
-
-ica = mne.preprocessing.ICA(method="infomax")
-
-def create_feature_vectors(epochs, tmin, tmax, lofreq, hifreq, epoch_type, sfreq):
-	feat_mat = []
-	y = []
-	epochs = epochs.copy().crop(tmin=tmin, tmax=tmax)
-	for idx, epoch in enumerate(epochs):
-		mean = np.mean(epoch, axis=0)
-
-		filtered = mne.filter.filter_data(epoch, method="iir", l_freq=lofreq, h_freq=hifreq,
-								 sfreq=sfreq)
-
-		activation = filtered - mean
-
-		mean_act = np.mean(activation, axis=1)
-		energy = np.sum(activation ** 2, axis=1)
-		power = energy / (len(epoch) * sfreq)
-
-		event_type = epochs.events[idx][2] - 1
-
-		#standarization will probably go wrong...
-		#try to make 2d array
-		features = np.zeros((3, 8))
-
-		features[0] = mean_act
-		features[1] = energy
-		features[2] = power
-
-		#print(mean_act.shape)
-		#print(energy.shape)
-		#print(power.shape)
-		#features = np.hstack((mean_act, energy, power))
-
-		y.append(event_type)
-
-		feat_mat.append(features)
-	return np.array(feat_mat), np.array(y)
-
-
-
-def epoch_extraction(data):
-	event_id = {"T1": 1, "T2": 2}
-	events, _ = mne.events_from_annotations(data)
-	sfreq = data.info["sfreq"] #sampling frequency in hertz.
-	epochs = mne.Epochs(data, events, event_id=event_id, tmin=-2, tmax=5.1,
-						baseline=None, preload=True)
-	
-	#ica.fit(data).apply(epochs)
-	# TODO we're probably not actually applying the ICA algo
-	# TODO use apply!
-	#ica.fit(erss)
-	#ica.fit(erds)
-	#ica.fit(mrcp)
-
-	#different types of analysis per epoch
-	mrcp_feats, mrcp_y = create_feature_vectors(epochs, -2, 0, 3, 30, 3, sfreq)
-	erd_feats, erd_y = create_feature_vectors(epochs, -2, 0, 8, 30, 2, sfreq)
-	ers_feats, ers_y = create_feature_vectors(epochs, 4.1, 5.1, 8, 30, 1, sfreq)
-
-
-	res = np.concatenate((ers_feats, erd_feats, mrcp_feats), axis=1)
-
-	return res, ers_y
-
-def get(arr):
-	features = []
-	y = []
-
-	for filtered in arr:
-		x,  epochs = epoch_extraction(filtered)
-		print("got some features")
-		
-		for i in x:
-			features.append(i)
-
-		for i in epochs:
-			y.append(i)
-
-	features = np.array(features)
-	print(features.shape)
-	return features, np.array(y)
-
+# ica = mne.preprocessing.ICA(method="infomax")
 #--------------------------------------------------------------------------------------------------------------------------
 #beginning of preprocessor class
 dataset_preprocessor = Preprocessor()
 dataset_preprocessor.load_raw_data(data_path=files)
 filtered_data = dataset_preprocessor.filter_raw_data()
 
-x_train, y_train = get(filtered_data)
+# feature_extractor = FeatureExtractor(filtered_data)
+feature_extractor = FeatureExtractor()
+epoch_processor = EpochProcessor(feature_extractor)
+analysis_manager = AnalysisManager(epoch_processor)
+
+# x_train, y_train = get(filtered_data) #analysismanager get_features_and_labels
+x_train, y_train = analysis_manager.get_features_and_labels(filtered_data)
+
 pipeline_custom = PipelineWrapper(n_comps=42)
 pipeline_custom.fit(x_train, y_train)
 
 predict_raw = dataset_preprocessor.load_raw_data(data_path=predict)
 predict_filtered = dataset_preprocessor.filter_raw_data()
-px_my, py_my = get(predict_filtered)
+# px_my, py_my = get(predict_filtered)
+px_my, py_my = analysis_manager.get_features_and_labels(predict_filtered)
+
 
 res_my = pipeline_custom.predict(px_my)
 acc_my = accuracy_score(py_my, res_my)

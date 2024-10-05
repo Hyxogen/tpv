@@ -3,10 +3,11 @@ import mne
 
 
 class FeatureExtractor:
-	def __init__(self, data_to_extract_from):
+	# def __init__(self, data_to_extract_from):
+	def __init__(self):
 		self.y = []
 		self.feature_matrix = [] #1 separate feature vector per epoch
-		self.data_to_extract_from = data_to_extract_from
+		# self.data_to_extract_from = data_to_extract_from
 		
 
 	def calculate_mean_power_energy(self, activation, epoch, sfreq):
@@ -14,7 +15,11 @@ class FeatureExtractor:
 		energy = np.sum(activation ** 2, axis=1)
 		power = energy / (len(epoch) * sfreq)
 		
-		current_feature_vec = np.array([mean_act, energy, power])
+		# current_feature_vec = np.array([mean_act, energy, power])
+		current_feature_vec = np.zeros((3,8))
+		current_feature_vec[0] = mean_act
+		current_feature_vec[1] = energy
+		current_feature_vec[2] = power
 		return current_feature_vec
 
 
@@ -35,6 +40,11 @@ class FeatureExtractor:
 			self.y.append(event_type)
 			self.feature_matrix.append(current_feature_vec)
 
-			self.feature_matrix = np.array(self.feature_matrix)
-			self.y = np.array(self.y)
+		
+		feature_matrix = np.array(self.feature_matrix)
+		y = np.array(self.y)
+		self.feature_matrix = [] #empty arrays otherwise will pile up and dimensions wont align
+		self.y = [] #empty arrays otherwise will pile up and dimensions wont align
+
+		return feature_matrix, y
 
