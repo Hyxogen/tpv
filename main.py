@@ -18,6 +18,9 @@ from epoch_processor import EpochProcessor
 from feature_extractor import FeatureExtractor
 from analysis_manager import AnalysisManager
 
+from sklearn.model_selection import cross_val_score, KFold
+
+
 import joblib
 
 mne.set_log_level(verbose='WARNING')
@@ -207,3 +210,12 @@ px_my, py_my = analysis_manager.get_features_and_labels(predict_filtered)
 res_my = pipeline_custom.predict(px_my)
 acc_my = accuracy_score(py_my, res_my)
 print(acc_my)
+
+
+k_fold_cross_val = KFold(n_splits=15, shuffle=True, random_state=42)
+scores = cross_val_score(pipeline_custom, x_train, y_train, cv=k_fold_cross_val, scoring='accuracy')
+
+
+#maybe take a look at GridSearch as well?
+print(f'Cross-validation accuracy scores for each fold: {scores}')
+print(f'Average accuracy: {scores.mean()}')

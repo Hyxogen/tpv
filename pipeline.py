@@ -20,13 +20,14 @@ class Printer(BaseEstimator, TransformerMixin):
 
 
 class PipelineWrapper:
-	def __init__(self, n_comps=2, mode='training'):
+	def __init__(self, n_comps=2, pca=None, model=None, scalers=None):
 		#if we are in prediction mode, we should load the pipeline first
-		self.scalers = {} #here we use fit_transform for each scaler
-		self.is_training_mode = mode #maybe later a bool
-		self.pca = My_PCA(n_comps=n_comps)
-		# self.model = LogisticRegression(penalty='l1', solver='liblinear') #can be the neural net later
-		self.model = MLPClassifier(random_state=42, hidden_layer_sizes=(20, 10), max_iter=16000)
+		self.n_comps = n_comps
+		self.scalers = scalers if scalers is not None else {} #here we use fit_transform for each scaler
+		# self.is_training_mode = mode #maybe later a bool
+		self.pca = pca if pca is not None else My_PCA(n_comps=n_comps)
+		# self.model = model if model is not None else LogisticRegression(penalty='l1', solver='liblinear') #can be the neural net later
+		self.model = model if model is not None else MLPClassifier(random_state=42, hidden_layer_sizes=(20, 10), max_iter=16000)
 		self.pipeline = Pipeline([("PCA", self.pca), ("Printer", Printer()), ("LogisticRegression", self.model)])
 
 
@@ -57,6 +58,23 @@ class PipelineWrapper:
 		x_test_scaled = self.transform_scalers(x_test)
 		x_test_scaled = x_test_scaled.reshape((x_test_scaled.shape[0], -1))
 		return self.pipeline.predict(x_test_scaled)
+
+
+	#https://github.com/scikit-learn/scikit-learn/blob/main/sklearn/pipeline.py
+	def get_params(self, deep=True): #allows sckit to use my parameters for cross val score
+		return {
+			'pca': self.pca,
+			'model': self.model,
+			'scalers': self.scalers,
+			'n_comps': self.n_comps
+		  }
+	
+	#this would be prob used in GridSearch where it would set our model/scalers/pipeline attributes into different combinations to see which performs the bets
+	def set_params(self, **params): #it collects any keywords passed into set params into dicts: ncomps=50 -> 'ncomps':50 
+		for parameter, value in params.items(): #in case 
+			setattr(self, parameter, value)
+		return self
+		
 
 
 	def save_pipeline(self, filepath):
