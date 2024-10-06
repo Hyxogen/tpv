@@ -7,6 +7,13 @@ from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.neural_network import MLPClassifier
 
 
+'''
+TODO:
+#eventually we could implement the pipeline for gridsearch even tho our prediction is working fine for now
+#from sklearn.base import BaseEstimator, ClassifierMixin (inheritance for gridsearch)
+'''
+
+
 class Printer(BaseEstimator, TransformerMixin):
 	def __init__(self, n_comps = 2):
 		return 
@@ -19,15 +26,16 @@ class Printer(BaseEstimator, TransformerMixin):
 		return x_features
 
 
+
 class PipelineWrapper:
 	def __init__(self, n_comps=2, pca=None, model=None, scalers=None):
 		self.n_comps = n_comps
 		self.scalers = scalers if scalers is not None else {} #here we use fit_transform for each scaler
 		# self.is_training_mode = mode #maybe later a bool
 		self.pca = pca if pca is not None else My_PCA(n_comps=n_comps)
-		# self.model = model if model is not None else LogisticRegression(penalty='l1', solver='liblinear') #can be the neural net later
 		self.model = model if model is not None else MLPClassifier(random_state=42, hidden_layer_sizes=(20, 10), max_iter=16000)
 		self.pipeline = Pipeline([("PCA", self.pca), ("Printer", Printer()), ("LogisticRegression", self.model)])
+
 
 
 	def fit_scalers(self, x_train):
@@ -37,13 +45,13 @@ class PipelineWrapper:
 			x_train_copy[:, i, :] = self.scalers[i].fit_transform(x_train[:, i, :])
 		return x_train_copy
 
+
+
 	def fit(self, x_train, y_train):
 		x_train = self.fit_scalers(x_train)  #assign the scaled data the scaled data back to x_train
-		# print('EXITED SCALER')
-		# print(f'{x_train} AFTER FITTING IN CLASS')
 		x_train = x_train.reshape((x_train.shape[0], -1))
-		# print(f'{x_train} are the scaled features in the class\n\n\n')
 		self.pipeline.fit(x_train, y_train)
+
 
 
 
@@ -59,6 +67,7 @@ class PipelineWrapper:
 		return self.pipeline.predict(x_test_scaled)
 
 
+
 	#https://github.com/scikit-learn/scikit-learn/blob/main/sklearn/pipeline.py
 	def get_params(self, deep=True): #allows sckit to use my parameters for cross val score
 		return {
@@ -67,11 +76,14 @@ class PipelineWrapper:
 			'scalers': self.scalers,
 			'n_comps': self.n_comps
 		  }
-	
+
+
+
 	#this would be prob used in GridSearch where it would set our model/scalers/pipeline attributes into different combinations to see which performs the bets
 	def set_params(self, **params): #it collects any keywords passed into set params into dicts: ncomps=50 -> 'ncomps':50 
 		for parameter, value in params.items(): #in case 
 			setattr(self, parameter, value)
+		#reinit pipeline with new params?
 		return self
 		
 
@@ -81,6 +93,7 @@ class PipelineWrapper:
 			'scalers': self.scalers,
 			'pipeline': self.pipeline
 		}, filepath)
+
 
 
 	def load_pipeline(self, filepath):

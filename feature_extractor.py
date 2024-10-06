@@ -7,8 +7,8 @@ class FeatureExtractor:
 	def __init__(self):
 		self.y = []
 		self.feature_matrix = [] #1 separate feature vector per epoch
-		# self.data_to_extract_from = data_to_extract_from
-		
+
+
 
 	def calculate_mean_power_energy(self, activation, epoch, sfreq):
 		mean_act = np.mean(activation, axis=1)
@@ -35,7 +35,6 @@ class FeatureExtractor:
 
 			current_feature_vec = self.calculate_mean_power_energy(activation, epoch, sfreq)
 			event_type = epochs.events[idx][2] - 1
-			#features = np.hstack((mean_act, energy, power))
 
 			self.y.append(event_type)
 			self.feature_matrix.append(current_feature_vec)

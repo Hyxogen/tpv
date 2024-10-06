@@ -3,6 +3,7 @@ import numpy as np
 import mne
 import sys
 import matplotlib.pyplot as plt
+
 from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
 from sklearn.pipeline import Pipeline
@@ -11,6 +12,8 @@ from sklearn.metrics import accuracy_score
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.neural_network import MLPClassifier
 from sklearn.base import BaseEstimator, TransformerMixin
+from sklearn.model_selection import ShuffleSplit
+from sklearn.model_selection import cross_val_score, KFold
 
 from dataset_preprocessor import Preprocessor
 from pipeline import PipelineWrapper
@@ -18,15 +21,8 @@ from epoch_processor import EpochProcessor
 from feature_extractor import FeatureExtractor
 from analysis_manager import AnalysisManager
 
-from sklearn.model_selection import cross_val_score, KFold
-
-
-import joblib
-
 mne.set_log_level(verbose='WARNING')
-
 channels = ["Fc3.", "Fcz.", "Fc4.", "C3..", "C1..", "Cz..", "C2..", "C4.."]
-
 predict = [
 "files/S018/S018R11.edf",
 "files/S042/S042R07.edf",
@@ -192,7 +188,7 @@ filtered_data = dataset_preprocessor.filter_raw_data()
 
 # feature_extractor = FeatureExtractor(filtered_data)
 feature_extractor = FeatureExtractor()
-epoch_processor = EpochProcessor(feature_extractor)
+epoch_processor = EpochProcessor(feature_extractor) #dependency injection, in python not necessary but good habit
 analysis_manager = AnalysisManager(epoch_processor)
 
 # x_train, y_train = get(filtered_data) #analysismanager get_features_and_labels
@@ -207,14 +203,16 @@ predict_filtered = dataset_preprocessor.filter_raw_data()
 px_my, py_my = analysis_manager.get_features_and_labels(predict_filtered)
 
 
+# k_fold_cross_val = KFold(n_splits=15, shuffle=True, random_state=42)
+shuffle_split_validation = ShuffleSplit(n_splits=5, test_size=0.3, random_state=0)
+
+# scoring = ['accuracy', 'precision', 'f1_micro'] this only works for: scores = cross_validate(pipeline_custom, x_train, y_train, scoring=scoring, cv=k_fold_cross_val)
+scores = cross_val_score(pipeline_custom, x_train, y_train, scoring='accuracy', cv=shuffle_split_validation)
+# sorted(scores.keys())
+
 res_my = pipeline_custom.predict(px_my)
 acc_my = accuracy_score(py_my, res_my)
 print(acc_my)
-
-
-k_fold_cross_val = KFold(n_splits=15, shuffle=True, random_state=42)
-scores = cross_val_score(pipeline_custom, x_train, y_train, cv=k_fold_cross_val, scoring='accuracy')
-
 
 #maybe take a look at GridSearch as well?
 print(f'Cross-validation accuracy scores for each fold: {scores}')
