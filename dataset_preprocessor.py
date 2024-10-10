@@ -21,7 +21,7 @@ class Preprocessor:
 				raise e
 
 
-
+#these ones should go to another part of the pipeline called FilterTransformer
 	def filter_frequencies(self, raw, lo_cut, hi_cut, noise_cut):
 		filtered_lo_hi = raw.copy().filter(lo_cut, hi_cut)
 		filter_noise = filtered_lo_hi.notch_filter(noise_cut)

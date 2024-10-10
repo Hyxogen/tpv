@@ -186,6 +186,7 @@ dataset_preprocessor = Preprocessor()
 dataset_preprocessor.load_raw_data(data_path=files)
 filtered_data = dataset_preprocessor.filter_raw_data()
 
+#we have now the filtered data, we n
 # feature_extractor = FeatureExtractor(filtered_data)
 feature_extractor = FeatureExtractor()
 epoch_processor = EpochProcessor(feature_extractor) #dependency injection, in python not necessary but good habit

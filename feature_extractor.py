@@ -9,7 +9,7 @@ class FeatureExtractor:
 		self.feature_matrix = [] #1 separate feature vector per epoch
 
 
-
+	#feature extractor should have this for sure
 	def calculate_mean_power_energy(self, activation, epoch, sfreq):
 		mean_act = np.mean(activation, axis=1)
 		energy = np.sum(activation ** 2, axis=1)
@@ -24,14 +24,36 @@ class FeatureExtractor:
 
 
 	#isn epoch type needed here?
-	def create_feature_vectors(self, epochs, tmin, tmax, lofreq, hifreq, epoch_type, sfreq):
-		epochs = epochs.copy().crop(tmin=tmin, tmax=tmax)
+	#this is also doing filtering epoch data, shouldnt happen here but before
+	# def create_feature_vectors(self, epochs, tmin, tmax, lofreq, hifreq, epoch_type, sfreq):
+	# 	epochs = epochs.copy().crop(tmin=tmin, tmax=tmax)
+	# 	for idx, epoch in enumerate(epochs):
+	# 		#try fft method, (fast fourier transform)
+	# 		filtered = mne.filter.filter_data(epoch, method="iir", l_freq=lofreq, h_freq=hifreq,
+	# 								sfreq=sfreq)
+
+	# 		mean = np.mean(epoch, axis=0)
+	# 		activation = filtered - mean
+
+	# 		current_feature_vec = self.calculate_mean_power_energy(activation, epoch, sfreq)
+	# 		event_type = epochs.events[idx][2] - 1
+
+	# 		self.y.append(event_type)
+	# 		self.feature_matrix.append(current_feature_vec)
+
+		
+	# 	feature_matrix = np.array(self.feature_matrix)
+	# 	y = np.array(self.y)
+	# 	self.feature_matrix = [] #empty arrays otherwise will pile up and dimensions wont align
+	# 	self.y = [] #empty arrays otherwise will pile up and dimensions wont align
+
+	# 	return feature_matrix, y
+	def create_feature_vectors(self, epochs, sfreq):
 		for idx, epoch in enumerate(epochs):
-			filtered = mne.filter.filter_data(epoch, method="iir", l_freq=lofreq, h_freq=hifreq,
-									sfreq=sfreq)
+			#epoch is already filtered by now
 
 			mean = np.mean(epoch, axis=0)
-			activation = filtered - mean
+			activation = epoch - mean
 
 			current_feature_vec = self.calculate_mean_power_energy(activation, epoch, sfreq)
 			event_type = epochs.events[idx][2] - 1
@@ -39,11 +61,10 @@ class FeatureExtractor:
 			self.y.append(event_type)
 			self.feature_matrix.append(current_feature_vec)
 
-		
+
 		feature_matrix = np.array(self.feature_matrix)
 		y = np.array(self.y)
 		self.feature_matrix = [] #empty arrays otherwise will pile up and dimensions wont align
 		self.y = [] #empty arrays otherwise will pile up and dimensions wont align
 
 		return feature_matrix, y
-

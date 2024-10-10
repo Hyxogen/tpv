@@ -34,6 +34,19 @@ class PipelineWrapper:
 		# self.is_training_mode = mode #maybe later a bool
 		self.pca = pca if pca is not None else My_PCA(n_comps=n_comps)
 		self.model = model if model is not None else MLPClassifier(random_state=42, hidden_layer_sizes=(20, 10), max_iter=16000)
+		#filter raw data
+
+		#extract epochs
+			#epoch processor
+
+		#filter epochs
+
+		#extract features
+		#reduce dimensions
+		#classifier
+		#when we create this pipeline we have to create composite estimators
+		#https://scikit-learn.org/1.5/modules/compose.html#combining-estimators
+
 		self.pipeline = Pipeline([("PCA", self.pca), ("Printer", Printer()), ("LogisticRegression", self.model)])
 
 
