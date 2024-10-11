@@ -5,9 +5,8 @@ import mne
 class FeatureExtractor:
 	# def __init__(self, data_to_extract_from):
 	def __init__(self):
-		self.y = []
-		self.feature_matrix = [] #1 separate feature vector per epoch
-
+		#better not creating a lifetime container here, threading might be tricky, keep it to local variables
+		pass
 
 	#feature extractor should have this for sure
 	def calculate_mean_power_energy(self, activation, epoch, sfreq):
@@ -48,23 +47,23 @@ class FeatureExtractor:
 	# 	self.y = [] #empty arrays otherwise will pile up and dimensions wont align
 
 	# 	return feature_matrix, y
-	def create_feature_vectors(self, epochs, sfreq):
+	
+
+	def create_feature_vectors(self, epochs, sfreq, compute_y=False):
+		y = [] if compute_y else None
+		feature_matrix = []
 		for idx, epoch in enumerate(epochs):
 			#epoch is already filtered by now
-
 			mean = np.mean(epoch, axis=0)
 			activation = epoch - mean
 
 			current_feature_vec = self.calculate_mean_power_energy(activation, epoch, sfreq)
-			event_type = epochs.events[idx][2] - 1
+			feature_matrix.append(current_feature_vec)
 
-			self.y.append(event_type)
-			self.feature_matrix.append(current_feature_vec)
-
-
-		feature_matrix = np.array(self.feature_matrix)
-		y = np.array(self.y)
-		self.feature_matrix = [] #empty arrays otherwise will pile up and dimensions wont align
-		self.y = [] #empty arrays otherwise will pile up and dimensions wont align
-
+			if compute_y == True:
+				event_type = epochs.events[idx][2] - 1  #[18368(time)     0(?)     1(event_type)]
+				y.append(event_type)
+			
+		feature_matrix = np.array(feature_matrix)
+		y = np.array(y) if compute_y else None
 		return feature_matrix, y
