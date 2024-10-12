@@ -1,8 +1,9 @@
 import mne
 import numpy as np
 from feature_extractor import FeatureExtractor
+from sklearn.base import BaseEstimator, TransformerMixin
 
-class EpochProcessor:
+class EpochProcessor(BaseEstimator, TransformerMixin):
 	def __init__(self, feature_extractor_instance):
 		self.feature_extractor = feature_extractor_instance 
 
@@ -14,6 +15,7 @@ class EpochProcessor:
 		sfreq = data.info["sfreq"]
 		epochs = mne.Epochs(data, events, event_id=event_id, tmin=-2, tmax=5.1,
 							baseline=None, preload=True)
+		print(sfreq)
 		return epochs, sfreq
 
 
@@ -21,6 +23,9 @@ class EpochProcessor:
 #is ica filter hopeless?
 	def process_epochs(self, filtered_eeg_data):
 		epochs, sfreq = self.extract_epochs(filtered_eeg_data)
+		
+		
+		#this is already feature extraction
 		analysis = {
 			'mrcp': {'tmin': -2, 'tmax': 0, 'lofreq': 3, 'hifreq': 30},
 			'erd': {'tmin': -2, 'tmax': 0, 'lofreq': 8, 'hifreq': 30},
@@ -37,6 +42,8 @@ class EpochProcessor:
 													method='iir')
 			#create an object of mne type?
 			compute_y = (analysis_name == 'ers')
+			
+			#this is now SEPARATE AND PROB WE DONT ASSIGN LABELS
 			feature_matrix, y = self.feature_extractor.create_feature_vectors(filtered_epochs, sfreq, compute_y)
 			feature_matrices.append(feature_matrix)
 			

@@ -1,8 +1,9 @@
 import numpy as np
 import mne
+from sklearn.base import BaseEstimator, TransformerMixin
 
 
-class FeatureExtractor:
+class FeatureExtractor(BaseEstimator, TransformerMixin):
 	# def __init__(self, data_to_extract_from):
 	def __init__(self):
 		#better not creating a lifetime container here, threading might be tricky, keep it to local variables
@@ -22,35 +23,7 @@ class FeatureExtractor:
 		return current_feature_vec
 
 
-	#isn epoch type needed here?
-	#this is also doing filtering epoch data, shouldnt happen here but before
-	# def create_feature_vectors(self, epochs, tmin, tmax, lofreq, hifreq, epoch_type, sfreq):
-	# 	y = []
-	# 	feature_matrix = []
-	# 	epochs = epochs.copy().crop(tmin=tmin, tmax=tmax)
-	# 	for idx, epoch in enumerate(epochs):
-	# 		#try fft method, (fast fourier transform)
-	# 		filtered = mne.filter.filter_data(epoch, method="iir", l_freq=lofreq, h_freq=hifreq,
-	# 								sfreq=sfreq)
-
-	# 		mean = np.mean(epoch, axis=0)
-	# 		activation = filtered - mean
-
-	# 		current_feature_vec = self.calculate_mean_power_energy(activation, epoch, sfreq)
-	# 		event_type = epochs.events[idx][2] - 1
-
-	# 		y.append(event_type)
-	# 		feature_matrix.append(current_feature_vec)
-
-		
-	# 	feature_matrix = np.array(feature_matrix)
-	# 	y = np.array(y)
-	# 	# self.feature_matrix = [] #empty arrays otherwise will pile up and dimensions wont align
-	# 	# self.y = [] #empty arrays otherwise will pile up and dimensions wont align
-
-	# 	return feature_matrix, y
-	
-
+	#this should be the transform for this class
 	def create_feature_vectors(self, epochs, sfreq, compute_y=False):
 		y = [] if compute_y else None #we only need this onece, if its ers, since event types are the same across epochs
 		feature_matrix = []
@@ -70,3 +43,32 @@ class FeatureExtractor:
 		y = np.array(y) if compute_y else None
 
 		return feature_matrix, y
+	
+
+
+	def transform(self, X):
+		'''
+		Input: filtered and cropped list of epochs from EpochExtractor
+		Output: a (x,y,z)d np array of created features based on mean, energy, power
+		NO LABELS HERE, WILL DO SEPARATE
+		'''
+		#this is now SEPARATE AND PROB WE DONT ASSIGN LABELS
+		sfreq = 160.0
+		feature_matrices = []
+		for filtered_epoch in X:
+			feature_matrix  = self.feature_extractor.create_feature_vectors(X, sfreq)
+			feature_matrices.append(feature_matrix)
+		
+		# if compute_y == True:
+		# 	labels = y
+
+		# if labels is None:
+		# 	raise ValueError("Labels were not assigned. Ensure that at least one analysis computes labels.")
+		
+		sample_counts = [fm.shape[0] for fm in feature_matrices]
+		if not all(count == sample_counts[0] for count in sample_counts):
+			raise ValueError("Inconsistent number of samples across analyses. Ensure all have the same number of epochs.")
+
+		res = np.concatenate(feature_matrices, axis=1)
+		return res
+

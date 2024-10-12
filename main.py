@@ -184,13 +184,15 @@ files = [
 #beginning of preprocessor class
 dataset_preprocessor = Preprocessor()
 dataset_preprocessor.load_raw_data(data_path=files)
-filtered_data = dataset_preprocessor.filter_raw_data()
+filtered_data = dataset_preprocessor.filter_raw_data() #THIS WILL BE INITIAL FILTER TRANSFORMER
+#this is gonna be in the pipeline object as initialFilterTransformer
+
 
 #we have now the filtered data, we n
 # feature_extractor = FeatureExtractor(filtered_data)
 feature_extractor = FeatureExtractor()
-epoch_processor = EpochProcessor(feature_extractor) #dependency injection, in python not necessary but good habit
-analysis_manager = AnalysisManager(epoch_processor)
+epoch_extractor = EpochProcessor(feature_extractor) #dependency injection, in python not necessary but good habit
+analysis_manager = AnalysisManager(epoch_extractor)
 
 # x_train, y_train = get(filtered_data) #analysismanager get_features_and_labels
 x_train, y_train = analysis_manager.get_features_and_labels(filtered_data)
