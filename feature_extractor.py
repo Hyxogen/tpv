@@ -25,6 +25,8 @@ class FeatureExtractor:
 	#isn epoch type needed here?
 	#this is also doing filtering epoch data, shouldnt happen here but before
 	# def create_feature_vectors(self, epochs, tmin, tmax, lofreq, hifreq, epoch_type, sfreq):
+	# 	y = []
+	# 	feature_matrix = []
 	# 	epochs = epochs.copy().crop(tmin=tmin, tmax=tmax)
 	# 	for idx, epoch in enumerate(epochs):
 	# 		#try fft method, (fast fourier transform)
@@ -37,20 +39,20 @@ class FeatureExtractor:
 	# 		current_feature_vec = self.calculate_mean_power_energy(activation, epoch, sfreq)
 	# 		event_type = epochs.events[idx][2] - 1
 
-	# 		self.y.append(event_type)
-	# 		self.feature_matrix.append(current_feature_vec)
+	# 		y.append(event_type)
+	# 		feature_matrix.append(current_feature_vec)
 
 		
-	# 	feature_matrix = np.array(self.feature_matrix)
-	# 	y = np.array(self.y)
-	# 	self.feature_matrix = [] #empty arrays otherwise will pile up and dimensions wont align
-	# 	self.y = [] #empty arrays otherwise will pile up and dimensions wont align
+	# 	feature_matrix = np.array(feature_matrix)
+	# 	y = np.array(y)
+	# 	# self.feature_matrix = [] #empty arrays otherwise will pile up and dimensions wont align
+	# 	# self.y = [] #empty arrays otherwise will pile up and dimensions wont align
 
 	# 	return feature_matrix, y
 	
 
 	def create_feature_vectors(self, epochs, sfreq, compute_y=False):
-		y = [] if compute_y else None
+		y = [] if compute_y else None #we only need this onece, if its ers, since event types are the same across epochs
 		feature_matrix = []
 		for idx, epoch in enumerate(epochs):
 			#epoch is already filtered by now
@@ -66,4 +68,5 @@ class FeatureExtractor:
 			
 		feature_matrix = np.array(feature_matrix)
 		y = np.array(y) if compute_y else None
+
 		return feature_matrix, y
