@@ -1,6 +1,7 @@
 from epoch_processor import EpochProcessor
 import numpy as np
 
+
 class AnalysisManager:
 	def __init__(self, epoch_extractor_instance):
 		self.epoch_extractor = epoch_extractor_instance
@@ -21,3 +22,27 @@ class AnalysisManager:
 					y.append(i)
 
 			return np.array(features), np.array(y)
+
+
+
+
+	def create_feature_vectors(self, epochs, sfreq, compute_y=False):
+		y = [] if compute_y else None #we only need this onece, if its ers, since event types are the same across epochs
+		feature_matrix = []
+		for idx, epoch in enumerate(epochs):
+			#epoch is already filtered by now
+			mean = np.mean(epoch, axis=0)
+			activation = epoch - mean
+
+			current_feature_vec = self.calculate_mean_power_energy(activation, epoch, sfreq)
+			feature_matrix.append(current_feature_vec)
+
+			if compute_y == True:
+				event_type = epochs.events[idx][2] - 1  #[18368(time)     0(?)     1(event_type)]
+				y.append(event_type)
+			
+		feature_matrix = np.array(feature_matrix)
+		y = np.array(y) if compute_y else None
+
+		return feature_matrix, y
+	

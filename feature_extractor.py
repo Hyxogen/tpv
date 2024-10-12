@@ -6,6 +6,7 @@ from sklearn.base import BaseEstimator, TransformerMixin
 class FeatureExtractor(BaseEstimator, TransformerMixin):
 	# def __init__(self, data_to_extract_from):
 	def __init__(self):
+		self._labels = []
 		#better not creating a lifetime container here, threading might be tricky, keep it to local variables
 		pass
 
@@ -55,20 +56,70 @@ class FeatureExtractor(BaseEstimator, TransformerMixin):
 		#this is now SEPARATE AND PROB WE DONT ASSIGN LABELS
 		sfreq = 160.0
 		feature_matrices = []
-		for filtered_epoch in X:
-			feature_matrix  = self.feature_extractor.create_feature_vectors(X, sfreq)
-			feature_matrices.append(feature_matrix)
 		
-		# if compute_y == True:
-		# 	labels = y
+		all_features = []
+		for filtered_epochs in X: #X are the extracted epochs
+			# epochs, sfreq = self.extract_epochs(filtered_data)
+			# epochs_data = epochs.get_data() #https://mne.tools/1.7/generated/mne.Epochs.html#mne.Epochs.get_data (data array of shape (n_epochs, n_channels, n_times))
+			#this would return a numpy array, for later maybe not now, this will be useful when we do crop manually
 
-		# if labels is None:
-		# 	raise ValueError("Labels were not assigned. Ensure that at least one analysis computes labels.")
+			analysis = {
+				'mrcp': {'tmin': -2, 'tmax': 0, 'lofreq': 3, 'hifreq': 30},
+				'erd': {'tmin': -2, 'tmax': 0, 'lofreq': 8, 'hifreq': 30},
+				'ers': {'tmin': 4.1, 'tmax': 5.1, 'lofreq': 8, 'hifreq': 30}
+			}
+
+			feature_matrices = []
+			labels = []
+			for analysis_name, parameters in analysis.items():
+				# start_time = (parameters['tmin'] - epochs_data.tmin) * sfreq) #vectorizing is gonna vbe faster than copying objects
+				# we gotta use numpy to make vector operations for now this is ok.
+				cropped_epochs = filtered_epochs.copy().crop(tmin=parameters['tmin'], tmax=parameters['tmax'])
+				filtered_epoch = cropped_epochs.filter(h_freq=parameters['hifreq'],
+														l_freq=parameters['lofreq'],
+														method='iir')
+				compute_y = (analysis_name == 'ers')
+				
+
+				# if labels is None:
+				# 	raise ValueError("Labels were not assigned. Ensure that at least one analysis computes labels.")
+				
+				feature_matrix, y = self.feature_extractor.create_feature_vectors(filtered_epoch, 160.0)
+				feature_matrices.append(feature_matrix)
+				if (compute_y == True):
+					labels = y
+
+			if labels is None:
+				raise ValueError("Labels were not assigned. Ensure that at least one analysis computes labels.")
+
+			#check samples for consistent counts
+			sample_counts = [fm.shape[0] for fm in feature_matrices]
+			if not all(count == sample_counts[0] for count in sample_counts):
+				raise ValueError("Inconsistent number of samples across analyses. Ensure all have the same number of epochs.")
+
+			res = np.concatenate(feature_matrices, axis=1)
+			self._labels = labels #would solve it more elegantly but transformer only returns one data, X
+			return res 
+
+
+
+
+
+
+		# for filtered_epoch in X:
+		# 	feature_matrix  = self.feature_extractor.create_feature_vectors(X, sfreq)
+		# 	feature_matrices.append(feature_matrix)
 		
-		sample_counts = [fm.shape[0] for fm in feature_matrices]
-		if not all(count == sample_counts[0] for count in sample_counts):
-			raise ValueError("Inconsistent number of samples across analyses. Ensure all have the same number of epochs.")
+		# # if compute_y == True:
+		# # 	labels = y
 
-		res = np.concatenate(feature_matrices, axis=1)
-		return res
+		# # if labels is None:
+		# # 	raise ValueError("Labels were not assigned. Ensure that at least one analysis computes labels.")
+		
+		# sample_counts = [fm.shape[0] for fm in feature_matrices]
+		# if not all(count == sample_counts[0] for count in sample_counts):
+		# 	raise ValueError("Inconsistent number of samples across analyses. Ensure all have the same number of epochs.")
+
+		# res = np.concatenate(feature_matrices, axis=1)
+		# return res
 

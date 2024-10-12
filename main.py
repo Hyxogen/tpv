@@ -179,6 +179,8 @@ files = [
 		#"/files/S090/S090R03.edf",
 		#"/files/S090/S090R07.edf",
 ]
+
+
 # ica = mne.preprocessing.ICA(method="infomax")
 #--------------------------------------------------------------------------------------------------------------------------
 #beginning of preprocessor class
@@ -195,6 +197,9 @@ epoch_extractor = EpochProcessor(feature_extractor) #dependency injection, in py
 analysis_manager = AnalysisManager(epoch_extractor)
 
 # x_train, y_train = get(filtered_data) #analysismanager get_features_and_labels
+#we need to extract labels separately
+
+
 x_train, y_train = analysis_manager.get_features_and_labels(filtered_data)
 
 pipeline_custom = PipelineWrapper(n_comps=42)
