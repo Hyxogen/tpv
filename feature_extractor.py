@@ -104,9 +104,11 @@ class FeatureExtractor(BaseEstimator, TransformerMixin):
 			all_labels.append(np.array(labels))
 	
 		# res = np.concatenate(all_features, axis=1)
-		self._labels = np.array(all_labels) #would solve it more elegantly but transformer only returns one data, X
-		ret = np.array(all_features)
+		self._labels = np.concatenate(all_labels, axis=0) #would solve it more elegantly but transformer only returns one data, X
+		ret = np.concatenate(all_features, axis=0) #this is now (59 epoch list, 21 epochs inside, 9*8 feature combinations) thus we need to concat them 
+		
 		print(ret.shape)
+		print(self._labels.shape)
 
 		# print(f'{ret} are all the features')
 		return ret

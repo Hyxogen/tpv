@@ -221,24 +221,30 @@ features = features_new.transform(epochs)
 
 
 
+#WORKS WITH THIS!!! TOMORROW LETS SEE IF WE CAN PUT INITFILTER,EPOCHEXTRACTOR,FEATUREEXTRACTOR INTO THE PIPELINE AND SAVE IT FOR THE PREDICT SCRIPT
+x_train, y_train = analysis_manager.get_features_and_labels(filtered_data)
+
+pipeline_custom = PipelineWrapper(n_comps=42)
+pipeline_custom.fit(x_train, y_train)
+
 #------------------------------------------------------------------------------------------------------------
-# predict_raw = dataset_preprocessor.load_raw_data(data_path=predict)
-# predict_filtered = dataset_preprocessor.filter_raw_data()
-# # px_my, py_my = get(predict_filtered)
-# px_my, py_my = analysis_manager.get_features_and_labels(predict_filtered)
+predict_raw = dataset_preprocessor.load_raw_data(data_path=predict)
+predict_filtered = dataset_preprocessor.filter_raw_data()
+# px_my, py_my = get(predict_filtered)
+px_my, py_my = analysis_manager.get_features_and_labels(predict_filtered)
 
 
-# # k_fold_cross_val = KFold(n_splits=15, shuffle=True, random_state=42)
-# shuffle_split_validation = ShuffleSplit(n_splits=5, test_size=0.3, random_state=0)
+# k_fold_cross_val = KFold(n_splits=15, shuffle=True, random_state=42)
+shuffle_split_validation = ShuffleSplit(n_splits=5, test_size=0.3, random_state=0)
 
-# # scoring = ['accuracy', 'precision', 'f1_micro'] this only works for: scores = cross_validate(pipeline_custom, x_train, y_train, scoring=scoring, cv=k_fold_cross_val)
-# scores = cross_val_score(pipeline_custom, x_train, y_train, scoring='accuracy', cv=shuffle_split_validation)
-# # sorted(scores.keys())
+# scoring = ['accuracy', 'precision', 'f1_micro'] this only works for: scores = cross_validate(pipeline_custom, x_train, y_train, scoring=scoring, cv=k_fold_cross_val)
+scores = cross_val_score(pipeline_custom, x_train, y_train, scoring='accuracy', cv=shuffle_split_validation)
+# sorted(scores.keys())
 
-# res_my = pipeline_custom.predict(px_my)
-# acc_my = accuracy_score(py_my, res_my)
-# print(acc_my)
+res_my = pipeline_custom.predict(px_my)
+acc_my = accuracy_score(py_my, res_my)
+print(acc_my)
 
-# #maybe take a look at GridSearch as well?
-# print(f'Cross-validation accuracy scores for each fold: {scores}')
-# print(f'Average accuracy: {scores.mean()}')
+#maybe take a look at GridSearch as well?
+print(f'Cross-validation accuracy scores for each fold: {scores}')
+print(f'Average accuracy: {scores.mean()}')
