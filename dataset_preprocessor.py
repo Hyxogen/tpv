@@ -17,6 +17,7 @@ class Preprocessor:
 			try:
 				raw = mne.io.read_raw_edf(file_path, include=self.data_channels)
 				self.raw_data.append(raw)
+				return self.raw_data
 			except IOError as e:
 				raise e
 

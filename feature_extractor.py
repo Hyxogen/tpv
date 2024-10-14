@@ -55,7 +55,6 @@ class FeatureExtractor(BaseEstimator, TransformerMixin):
 		'''
 		#this is now SEPARATE AND PROB WE DONT ASSIGN LABELS
 		sfreq = 160.0
-		feature_matrices = []
 		
 		all_features = []
 		for filtered_epochs in X: #X are the extracted epochs
@@ -84,25 +83,32 @@ class FeatureExtractor(BaseEstimator, TransformerMixin):
 				# if labels is None:
 				# 	raise ValueError("Labels were not assigned. Ensure that at least one analysis computes labels.")
 				
-				feature_matrix, y = self.feature_extractor.create_feature_vectors(filtered_epoch, 160.0)
+				feature_matrix, y = self.create_feature_vectors(filtered_epoch, 160.0, compute_y)
 				feature_matrices.append(feature_matrix)
 				if (compute_y == True):
 					labels = y
 
-			if labels is None:
-				raise ValueError("Labels were not assigned. Ensure that at least one analysis computes labels.")
+				if labels is None:
+					raise ValueError("Labels were not assigned. Ensure that at least one analysis computes labels.")
 
-			#check samples for consistent counts
-			sample_counts = [fm.shape[0] for fm in feature_matrices]
-			if not all(count == sample_counts[0] for count in sample_counts):
-				raise ValueError("Inconsistent number of samples across analyses. Ensure all have the same number of epochs.")
+				#check samples for consistent counts
+				sample_counts = [fm.shape[0] for fm in feature_matrices]
+				if not all(count == sample_counts[0] for count in sample_counts):
+					raise ValueError("Inconsistent number of samples across analyses. Ensure all have the same number of epochs.")
+			print(f'{all_features.shape} are all features shape now')
+			for i in feature_matrices:
+				all_features.append(i)
+			for i in labels:
+				self._labels.append(i)
+			
+	
+		res = np.concatenate(all_features, axis=1)
+		self._labels = np.array(self._labels) #would solve it more elegantly but transformer only returns one data, X
+		print(f'{res} are all the features')
+		return res
 
-			res = np.concatenate(feature_matrices, axis=1)
-			self._labels = labels #would solve it more elegantly but transformer only returns one data, X
-			return res 
 
-
-
+#PROBLEM IS POSSIBLY THAT ITS ONLY A 2D ARRAY, WE NEED 3 D ARRAYS
 
 
 

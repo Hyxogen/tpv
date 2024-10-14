@@ -52,7 +52,7 @@ class EpochExtractor(BaseEstimator, TransformerMixin):
 		for filtered_eeg_data in X:
 			epochs, sfreq = self.extract_epochs(filtered_eeg_data)
 			epochs_list.append(epochs)
-		
+		# print(f'{epochs_list} is the epochs list from transform')
 		return epochs_list
 		# all_features = []
 		# for filtered_data in X:

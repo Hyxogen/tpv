@@ -17,9 +17,15 @@ from sklearn.model_selection import cross_val_score, KFold
 
 from dataset_preprocessor import Preprocessor
 from pipeline import PipelineWrapper
+from pipeline_2 import PipelineWrapper2
 from epoch_processor import EpochProcessor
 from feature_extractor import FeatureExtractor
 from analysis_manager import AnalysisManager
+
+
+from filter_transformer import InitialFilterTransformer
+from epoch_extractor import EpochExtractor
+
 
 mne.set_log_level(verbose='WARNING')
 channels = ["Fc3.", "Fcz.", "Fc4.", "C3..", "C1..", "Cz..", "C2..", "C4.."]
@@ -185,7 +191,7 @@ files = [
 #--------------------------------------------------------------------------------------------------------------------------
 #beginning of preprocessor class
 dataset_preprocessor = Preprocessor()
-dataset_preprocessor.load_raw_data(data_path=files)
+raw_data = dataset_preprocessor.load_raw_data(data_path=files)
 filtered_data = dataset_preprocessor.filter_raw_data() #THIS WILL BE INITIAL FILTER TRANSFORMER
 #this is gonna be in the pipeline object as initialFilterTransformer
 
@@ -198,13 +204,26 @@ analysis_manager = AnalysisManager(epoch_extractor)
 
 # x_train, y_train = get(filtered_data) #analysismanager get_features_and_labels
 #we need to extract labels separately
-
-
 x_train, y_train = analysis_manager.get_features_and_labels(filtered_data)
 
 pipeline_custom = PipelineWrapper(n_comps=42)
 pipeline_custom.fit(x_train, y_train)
 
+
+# filter_new = InitialFilterTransformer()
+# filtered_data_new = filter_new.transform(raw_data)
+
+# epoch_extractor_new = EpochExtractor()
+# epochs = epoch_extractor_new.transform(filtered_data_new)
+
+# features_new = FeatureExtractor()
+# features = features_new.transform(epochs)
+# print(features)
+
+
+
+
+#------------------------------------------------------------------------------------------------------------
 predict_raw = dataset_preprocessor.load_raw_data(data_path=predict)
 predict_filtered = dataset_preprocessor.filter_raw_data()
 # px_my, py_my = get(predict_filtered)

@@ -22,6 +22,12 @@ class EpochProcessor(BaseEstimator, TransformerMixin):
 #feature extractor have self,y and self feature matrix
 #is ica filter hopeless?
 	def process_epochs(self, filtered_eeg_data):
+		epochs_list = []
+
+		for filtered in filtered_eegfilte_data:
+			epochs, sfreq = self.extract_epochs(filtered)
+			epochs_list.append(epochs)
+
 		epochs, sfreq = self.extract_epochs(filtered_eeg_data)
 		
 		
