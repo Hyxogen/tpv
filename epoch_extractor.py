@@ -50,6 +50,7 @@ class EpochExtractor(BaseEstimator, TransformerMixin):
 		epochs_list = []
 
 		for filtered_eeg_data in X:
+			print('TRANSFORM IN EXTRACT EPOCHS')
 			epochs, sfreq = self.extract_epochs(filtered_eeg_data)
 			epochs_list.append(epochs)
 		# print(f'{epochs_list} is the epochs list from transform')

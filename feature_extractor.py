@@ -57,7 +57,9 @@ class FeatureExtractor(BaseEstimator, TransformerMixin):
 		sfreq = 160.0
 		
 		all_features = []
-		for filtered_epochs in X: #X are the extracted epochs
+		all_labels = []
+		for idx, filtered_epochs in enumerate(X): #X are the extracted epochs
+			# print(f'{idx} IS INDEX, {filtered_epochs} IS EPOCHS')
 			# epochs, sfreq = self.extract_epochs(filtered_data)
 			# epochs_data = epochs.get_data() #https://mne.tools/1.7/generated/mne.Epochs.html#mne.Epochs.get_data (data array of shape (n_epochs, n_channels, n_times))
 			#this would return a numpy array, for later maybe not now, this will be useful when we do crop manually
@@ -95,17 +97,19 @@ class FeatureExtractor(BaseEstimator, TransformerMixin):
 				sample_counts = [fm.shape[0] for fm in feature_matrices]
 				if not all(count == sample_counts[0] for count in sample_counts):
 					raise ValueError("Inconsistent number of samples across analyses. Ensure all have the same number of epochs.")
-			print(f'{all_features.shape} are all features shape now')
-			for i in feature_matrices:
-				all_features.append(i)
-			for i in labels:
-				self._labels.append(i)
-			
+			# print(f'{feature_matrices} ARE THE FEATURE MATRICES INSIDE THE EXTRACTOR')
+			# print(feature_matrices.shape)
+
+			all_features.append(np.concatenate(feature_matrices, axis=1))
+			all_labels.append(np.array(labels))
 	
-		res = np.concatenate(all_features, axis=1)
-		self._labels = np.array(self._labels) #would solve it more elegantly but transformer only returns one data, X
-		print(f'{res} are all the features')
-		return res
+		# res = np.concatenate(all_features, axis=1)
+		self._labels = np.array(all_labels) #would solve it more elegantly but transformer only returns one data, X
+		ret = np.array(all_features)
+		print(ret.shape)
+
+		# print(f'{ret} are all the features')
+		return ret
 
 
 #PROBLEM IS POSSIBLY THAT ITS ONLY A 2D ARRAY, WE NEED 3 D ARRAYS

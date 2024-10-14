@@ -3,8 +3,8 @@ import numpy as np
 
 
 class AnalysisManager:
-	def __init__(self, epoch_extractor_instance):
-		self.epoch_extractor = epoch_extractor_instance
+	def __init__(self, epoch_processor_instance):
+		self.epoch_processor = epoch_processor_instance
 
 
 
@@ -14,8 +14,9 @@ class AnalysisManager:
 			#this filtered eeg data have to come in 2 sec chunks, create a buffer which holds that
 			#implement a buffer where we send overlapping data and feed it to the process part
 			for filtered in filtered_data:
-				x,  epochs = self.epoch_extractor.process_epochs(filtered)
 				print("Processing epochs, receiving features.")
+
+				x,  epochs = self.epoch_processor.process_epochs(filtered)
 				for i in x:
 					features.append(i)
 				for i in epochs:
@@ -26,23 +27,23 @@ class AnalysisManager:
 
 
 
-	def create_feature_vectors(self, epochs, sfreq, compute_y=False):
-		y = [] if compute_y else None #we only need this onece, if its ers, since event types are the same across epochs
-		feature_matrix = []
-		for idx, epoch in enumerate(epochs):
-			#epoch is already filtered by now
-			mean = np.mean(epoch, axis=0)
-			activation = epoch - mean
+	# def create_feature_vectors(self, epochs, sfreq, compute_y=False):
+	# 	y = [] if compute_y else None #we only need this onece, if its ers, since event types are the same across epochs
+	# 	feature_matrix = []
+	# 	for idx, epoch in enumerate(epochs):
+	# 		#epoch is already filtered by now
+	# 		mean = np.mean(epoch, axis=0)
+	# 		activation = epoch - mean
 
-			current_feature_vec = self.calculate_mean_power_energy(activation, epoch, sfreq)
-			feature_matrix.append(current_feature_vec)
+	# 		current_feature_vec = self.calculate_mean_power_energy(activation, epoch, sfreq)
+	# 		feature_matrix.append(current_feature_vec)
 
-			if compute_y == True:
-				event_type = epochs.events[idx][2] - 1  #[18368(time)     0(?)     1(event_type)]
-				y.append(event_type)
+	# 		if compute_y == True:
+	# 			event_type = epochs.events[idx][2] - 1  #[18368(time)     0(?)     1(event_type)]
+	# 			y.append(event_type)
 			
-		feature_matrix = np.array(feature_matrix)
-		y = np.array(y) if compute_y else None
+	# 	feature_matrix = np.array(feature_matrix)
+	# 	y = np.array(y) if compute_y else None
 
-		return feature_matrix, y
+	# 	return feature_matrix, y
 	

@@ -17,9 +17,10 @@ class Preprocessor:
 			try:
 				raw = mne.io.read_raw_edf(file_path, include=self.data_channels)
 				self.raw_data.append(raw)
-				return self.raw_data
+				# return self.raw_data
 			except IOError as e:
 				raise e
+		return self.raw_data
 
 
 #these ones should go to another part of the pipeline called FilterTransformer
