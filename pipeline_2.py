@@ -31,7 +31,7 @@ class PipelineWrapper2(BaseEstimator, TransformerMixin):
 	def __init__(self, n_comps=2, filter_transformer=None, epoch_extractor=None, feature_extractor=None, pca=None, model=None, scalers=None):
 		self.n_comps = n_comps
 		self.filter_transformer = filter_transformer
-		self.epoch_extractor = epoch_extractor
+		# self.epoch_extractor = epoch_extractor
 		self.feature_extractor = feature_extractor
 		self.scalers = scalers if scalers is not None else {} #here we use fit_transform for each scaler
 		self.pca = pca if pca is not None else My_PCA(n_comps=n_comps)
@@ -40,9 +40,10 @@ class PipelineWrapper2(BaseEstimator, TransformerMixin):
 		#https://scikit-learn.org/1.5/modules/compose.html#combining-estimators
 
 		# self.pipeline = Pipeline([("PCA", self.pca), ("Printer", Printer()), ("LogisticRegression", self.model)])
+		#https://scikit-learn.org/1.5/modules/generated/sklearn.pipeline.FeatureUnion.html#sklearn.pipeline.FeatureUnion
 		self.pipeline = Pipeline([
 			('filter', self.filter_transformer),
-			('epoch_extractor', self.epoch_extractor),
+			# ('epoch_extractor', self.epoch_extractor),
 			('feature_extractor', self.feature_extractor),
 			('PCA',self.pca),
 			('classification', self.model)
@@ -64,13 +65,14 @@ class PipelineWrapper2(BaseEstimator, TransformerMixin):
 		self.pipeline.fit(x_train, y_train)
 
 
-
+	#transform function probably internally should call the filter and feature extractor
 
 	def transform_scalers(self, x_test):
 		x_test_copy = x_test.copy()
 		for i in range(x_test.shape[1]):
 			x_test_copy[:, i, :] = self.scalers[i].transform(x_test[:, i, :])
 		return x_test_copy
+
 
 	def predict(self, x_test):
 		x_test_scaled = self.transform_scalers(x_test)

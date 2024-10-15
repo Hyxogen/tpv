@@ -182,6 +182,35 @@ files = [
 		#"/files/S090/S090R07.edf",
 ]
 
+def extract_epochs(data):
+	event_id = {"T1": 1, "T2": 2}
+	events, _ = mne.events_from_annotations(data)
+	sfreq = data.info["sfreq"] #this is 160 but we could create a custom dataclass to pass this along, transform only expects an X output
+	epochs = mne.Epochs(data, events, event_id=event_id, tmin=-2, tmax=5.1,
+						baseline=None, preload=True)
+	return epochs, sfreq
+
+
+#feature extractor have self,y and self feature matrix
+#is ica filter hopeless?
+def extract_epochs_and_labelsf(eeg_data):
+	'''
+	Input: X->filtered eeg data, several eeg files thus we need a loop
+	output1: Filtered epochs on which we will run feature extraction (based on different timeframes and associated high/low frequencies)
+	output2: the labels of the epoch events which we will use as y_train 
+	'''
+	epochs_list = []
+	labels_list = []
+	for filtered_eeg_data in eeg_data:
+		# print('TRANSFORM IN EXTRACT EPOCHS')
+		epochs, sfreq = extract_epochs(filtered_eeg_data)
+		epochs_list.append(epochs)
+		labels = epochs.events[:, 2]- 1 #these are all the same, prob enough jsut [2][1]
+		labels_list.append(labels)
+	# print(f'{epochs_list} is the epochs list from transform')
+	return epochs_list, np.concatenate(labels_list)
+
+
 
 # ica = mne.preprocessing.ICA(method="infomax")
 #--------------------------------------------------------------------------------------------------------------------------
@@ -210,22 +239,24 @@ analysis_manager = AnalysisManager(epoch_processor)
 filter_new = InitialFilterTransformer()
 filtered_data_new = filter_new.transform(loaded_data)
 
-epoch_extractor_new = EpochExtractor()
-epochs = epoch_extractor_new.transform(filtered_data_new) #this just gets the epochs which were previously processed and extracted by analysismanager
+# epoch_extractor_new = EpochExtractor()
+# epochs = epoch_extractor_new.transform(filtered_data_new) #this just gets the epochs which were previously processed and extracted by analysismanager
+epochs, labels = extract_epochs_and_labelsf(filtered_data_new)
 
-print(epochs)
-features_new = FeatureExtractor()
-features = features_new.transform(epochs)
-# print(features)
-
+features_extractor_new = FeatureExtractor()
+features = features_extractor_new.transform(epochs)
 
 
+
+pipeline_2 = PipelineWrapper2(filter_new, features_extractor_new)
+pipeline_2.transform(epochs, labels)
+# pipeline_2.pipeline[:-1].get_feature_names_out()
 
 #WORKS WITH THIS!!! TOMORROW LETS SEE IF WE CAN PUT INITFILTER,EPOCHEXTRACTOR,FEATUREEXTRACTOR INTO THE PIPELINE AND SAVE IT FOR THE PREDICT SCRIPT
 # x_train, y_train = analysis_manager.get_features_and_labels(filtered_data)
-# x_train, y_train = features, features_new._labels
-# print(x_train)
-# print(y_train)
+# x_train, y_train = features, labels
+# # print(x_train)
+# # print(y_train)
 
 # pipeline_custom = PipelineWrapper(n_comps=42)
 # pipeline_custom.fit(x_train, y_train)
@@ -236,23 +267,27 @@ features = features_new.transform(epochs)
 
 
 #------------------------------------------------------------------------------------------------------------
-# predict_raw = dataset_preprocessor.load_raw_data(data_path=predict)
-# predict_filtered = dataset_preprocessor.filter_raw_data()
-# # px_my, py_my = get(predict_filtered)
-# px_my, py_my = analysis_manager.get_features_and_labels(predict_filtered)
+predict_raw = dataset_preprocessor.load_raw_data(data_path=predict)
+predict_filtered = dataset_preprocessor.filter_raw_data()
+# px_my, py_my = get(predict_filtered)
+px_my, py_my = analysis_manager.get_features_and_labels(predict_filtered)
 
 
-# # k_fold_cross_val = KFold(n_splits=15, shuffle=True, random_state=42)
-# shuffle_split_validation = ShuffleSplit(n_splits=5, test_size=0.3, random_state=0)
+# k_fold_cross_val = KFold(n_splits=15, shuffle=True, random_state=42)
+shuffle_split_validation = ShuffleSplit(n_splits=5, test_size=0.3, random_state=0)
 
-# # scoring = ['accuracy', 'precision', 'f1_micro'] this only works for: scores = cross_validate(pipeline_custom, x_train, y_train, scoring=scoring, cv=k_fold_cross_val)
+# scoring = ['accuracy', 'precision', 'f1_micro'] this only works for: scores = cross_validate(pipeline_custom, x_train, y_train, scoring=scoring, cv=k_fold_cross_val)
 # scores = cross_val_score(pipeline_custom, x_train, y_train, scoring='accuracy', cv=shuffle_split_validation)
-# # sorted(scores.keys())
+scores = cross_val_score(pipeline_2, features, labels, scoring='accuracy', cv=shuffle_split_validation)
+
+# sorted(scores.keys())
 
 # res_my = pipeline_custom.predict(px_my)
-# acc_my = accuracy_score(py_my, res_my)
-# print(acc_my)
+res_my = pipeline_2.predict(px_my)
 
-# #maybe take a look at GridSearch as well?
-# print(f'Cross-validation accuracy scores for each fold: {scores}')
-# print(f'Average accuracy: {scores.mean()}')
+acc_my = accuracy_score(py_my, res_my)
+print(acc_my)
+
+#maybe take a look at GridSearch as well?
+print(f'Cross-validation accuracy scores for each fold: {scores}')
+print(f'Average accuracy: {scores.mean()}')
