@@ -23,6 +23,12 @@ from feature_extractor import FeatureExtractor
 from analysis_manager import AnalysisManager
 
 
+from epoch_extractor import epoch_extractooor, extract_epochs
+from feature_extractor import feature_extractor, create_feature_vectors, calculate_mean_power_energy
+
+
+from sklearn.preprocessing import FunctionTransformer
+from filter_transformer import initial_filter, filter_frequencies
 from filter_transformer import InitialFilterTransformer
 from epoch_extractor import EpochExtractor
 
@@ -214,6 +220,9 @@ def extract_epochs_and_labelsf(eeg_data):
 
 # ica = mne.preprocessing.ICA(method="infomax")
 #--------------------------------------------------------------------------------------------------------------------------
+
+
+
 #beginning of preprocessor class
 dataset_preprocessor = Preprocessor()
 # raw_data = dataset_preprocessor.load_raw_data(data_path=files)
@@ -222,10 +231,11 @@ filtered_data = dataset_preprocessor.filter_raw_data() #THIS WILL BE INITIAL FIL
 #this is gonna be in the pipeline object as initialFilterTransformer
 
 
+
 #we have now the filtered data, we n
 # feature_extractor = FeatureExtractor(filtered_data)
-feature_extractor = FeatureExtractor()
-epoch_processor = EpochProcessor(feature_extractor) #dependency injection, in python not necessary but good habit
+feature_extractor1 = FeatureExtractor()
+epoch_processor = EpochProcessor(feature_extractor1) #dependency injection, in python not necessary but good habit
 analysis_manager = AnalysisManager(epoch_processor)
 
 # x_train, y_train = get(filtered_data) #analysismanager get_features_and_labels
@@ -235,21 +245,40 @@ analysis_manager = AnalysisManager(epoch_processor)
 # pipeline_custom = PipelineWrapper(n_comps=42)
 # pipeline_custom.fit(x_train, y_train)
 
+epochs, labels = extract_epochs_and_labelsf(filtered_data)
 
-filter_new = InitialFilterTransformer()
-filtered_data_new = filter_new.transform(loaded_data)
+print(type(filtered_data))
+print(type(labels))
 
-# epoch_extractor_new = EpochExtractor()
-# epochs = epoch_extractor_new.transform(filtered_data_new) #this just gets the epochs which were previously processed and extracted by analysismanager
-epochs, labels = extract_epochs_and_labelsf(filtered_data_new)
+#https://scikit-learn.org/dev/modules/generated/sklearn.preprocessing.FunctionTransformer.html
+filter_transformer = FunctionTransformer(initial_filter, validate=False)
+epoch_transformer = FunctionTransformer(epoch_extractooor, validate=False)
+feature_transformer = FunctionTransformer(feature_extractor)
 
-features_extractor_new = FeatureExtractor()
-features = features_extractor_new.transform(epochs)
+# pipeline_2 = PipelineWrapper2(filter_new, features_extractor_new)
+pipeline_wrapper = PipelineWrapper2(
+	n_comps=42,
+	filter_transformer=filter_transformer,
+	epoch_extractor=epoch_transformer,
+	feature_extractor=feature_transformer,
+)
+
+pipeline_wrapper.fit(filtered_data, labels)
+
+
+# filter_new = InitialFilterTransformer()
+# filtered_data_new = filter_new.transform(loaded_data)
+
+# # epoch_extractor_new = EpochExtractor()
+# # epochs = epoch_extractor_new.transform(filtered_data_new) #this just gets the epochs which were previously processed and extracted by analysismanager
+
+# features_extractor_new = FeatureExtractor()
+# features = features_extractor_new.transform(epochs)
 
 
 
-pipeline_2 = PipelineWrapper2(filter_new, features_extractor_new)
-pipeline_2.transform(epochs, labels)
+# pipeline_2 = PipelineWrapper2(filter_new, features_extractor_new)
+# pipeline_2.transform(epochs, labels)
 # pipeline_2.pipeline[:-1].get_feature_names_out()
 
 #WORKS WITH THIS!!! TOMORROW LETS SEE IF WE CAN PUT INITFILTER,EPOCHEXTRACTOR,FEATUREEXTRACTOR INTO THE PIPELINE AND SAVE IT FOR THE PREDICT SCRIPT

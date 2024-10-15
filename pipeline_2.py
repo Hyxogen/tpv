@@ -31,21 +31,20 @@ class PipelineWrapper2(BaseEstimator, TransformerMixin):
 	def __init__(self, n_comps=2, filter_transformer=None, epoch_extractor=None, feature_extractor=None, pca=None, model=None, scalers=None):
 		self.n_comps = n_comps
 		self.filter_transformer = filter_transformer
-		# self.epoch_extractor = epoch_extractor
+		self.epoch_extractor = epoch_extractor
 		self.feature_extractor = feature_extractor
 		self.scalers = scalers if scalers is not None else {} #here we use fit_transform for each scaler
 		self.pca = pca if pca is not None else My_PCA(n_comps=n_comps)
 		self.model = model if model is not None else MLPClassifier(random_state=42, hidden_layer_sizes=(20, 10), max_iter=16000)
 		#when we create this pipeline we have to create composite estimators
-		#https://scikit-learn.org/1.5/modules/compose.html#combining-estimators
-
+		#https://scikit-learn.org/1.5/modules/compose.html#combining-estimators\
 		# self.pipeline = Pipeline([("PCA", self.pca), ("Printer", Printer()), ("LogisticRegression", self.model)])
 		#https://scikit-learn.org/1.5/modules/generated/sklearn.pipeline.FeatureUnion.html#sklearn.pipeline.FeatureUnion
 		self.pipeline = Pipeline([
 			('filter', self.filter_transformer),
-			# ('epoch_extractor', self.epoch_extractor),
+			('epoch_extractor', self.epoch_extractor),
 			('feature_extractor', self.feature_extractor),
-			('PCA',self.pca),
+			('pca',self.pca),
 			('classification', self.model)
 		])
 
@@ -58,15 +57,20 @@ class PipelineWrapper2(BaseEstimator, TransformerMixin):
 		return x_train_copy
 
 
+	def transform(self, X):
+		self.feature_extractor.transform(X)
+		return X
+
 
 	def fit(self, x_train, y_train):
-		x_train = self.fit_scalers(x_train)  #assign the scaled data the scaled data back to x_train
-		x_train = x_train.reshape((x_train.shape[0], -1))
+		# print(f'{x_train} is the FITTED DATA')
+		# #THIS IS WRONG DATA HERE BECAUSE PIPELINE DOESNT TRANSFORM FIRST
+		# x_train = self.fit_scalers(x_train)  #assign the scaled data the scaled data back to x_train
+		# x_train = x_train.reshape((x_train.shape[0], -1))
 		self.pipeline.fit(x_train, y_train)
 
 
 	#transform function probably internally should call the filter and feature extractor
-
 	def transform_scalers(self, x_test):
 		x_test_copy = x_test.copy()
 		for i in range(x_test.shape[1]):
@@ -78,7 +82,6 @@ class PipelineWrapper2(BaseEstimator, TransformerMixin):
 		x_test_scaled = self.transform_scalers(x_test)
 		x_test_scaled = x_test_scaled.reshape((x_test_scaled.shape[0], -1))
 		return self.pipeline.predict(x_test_scaled)
-
 
 
 	#https://github.com/scikit-learn/scikit-learn/blob/main/sklearn/pipeline.py

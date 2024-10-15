@@ -47,3 +47,27 @@ class InitialFilterTransformer(BaseEstimator, TransformerMixin):
 			filtered_data.append(self.filter_frequencies(raw, self.lo_cut, self.hi_cut, self.noise_cut))
 		# self.raw_data = [] #empty memory, wouldnt it leak? 
 		return filtered_data
+
+
+
+
+def filter_frequencies(raw, lo_cut, hi_cut, noise_cut):
+		filtered_lo_hi = raw.copy().filter(lo_cut, hi_cut)
+		filter_noise = filtered_lo_hi.notch_filter(noise_cut)
+		return filter_noise
+
+
+def initial_filter(X):
+	'''
+	Input: X -> raw eeg data
+	Output: filtered eeg data
+	'''
+	lo_cut = 0.1
+	hi_cut = 30
+	noise_cut = 50
+	filtered_data = []
+	for raw in X:
+		raw.load_data() #gotta close somewhere prob
+		filtered_data.append(filter_frequencies(raw, lo_cut, hi_cut, noise_cut))
+	# self.raw_data = [] #empty memory, wouldnt it leak? 
+	return filtered_data
