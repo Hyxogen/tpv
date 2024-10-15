@@ -33,6 +33,9 @@ from filter_transformer import InitialFilterTransformer
 from epoch_extractor import EpochExtractor
 
 
+from custom_scaler import CustomScaler
+from reshaper import Reshaper
+
 mne.set_log_level(verbose='WARNING')
 channels = ["Fc3.", "Fcz.", "Fc4.", "C3..", "C1..", "Cz..", "C2..", "C4.."]
 predict = [
@@ -228,6 +231,8 @@ dataset_preprocessor = Preprocessor()
 # raw_data = dataset_preprocessor.load_raw_data(data_path=files)
 loaded_data = dataset_preprocessor.load_raw_data(data_path=files) #RETURN DOESNT WORK, IT RETURNS AFTER 1 FILE
 filtered_data = dataset_preprocessor.filter_raw_data() #THIS WILL BE INITIAL FILTER TRANSFORMER
+epochs, labels = extract_epochs_and_labelsf(filtered_data)
+
 #this is gonna be in the pipeline object as initialFilterTransformer
 
 
@@ -238,17 +243,16 @@ feature_extractor1 = FeatureExtractor()
 epoch_processor = EpochProcessor(feature_extractor1) #dependency injection, in python not necessary but good habit
 analysis_manager = AnalysisManager(epoch_processor)
 
-# x_train, y_train = get(filtered_data) #analysismanager get_features_and_labels
+# # x_train, y_train = get(filtered_data) #analysismanager get_features_and_labels
 #we need to extract labels separately
 # x_train, y_train = analysis_manager.get_features_and_labels(filtered_data)
 
 # pipeline_custom = PipelineWrapper(n_comps=42)
 # pipeline_custom.fit(x_train, y_train)
 
-epochs, labels = extract_epochs_and_labelsf(filtered_data)
 
-print(type(filtered_data))
-print(type(labels))
+# print(type(filtered_data))
+# print(type(labels))
 
 #https://scikit-learn.org/dev/modules/generated/sklearn.preprocessing.FunctionTransformer.html
 filter_transformer = FunctionTransformer(initial_filter, validate=False)
@@ -296,8 +300,13 @@ pipeline_wrapper.fit(filtered_data, labels)
 
 
 #------------------------------------------------------------------------------------------------------------
+
+
 predict_raw = dataset_preprocessor.load_raw_data(data_path=predict)
+
 predict_filtered = dataset_preprocessor.filter_raw_data()
+
+
 # px_my, py_my = get(predict_filtered)
 px_my, py_my = analysis_manager.get_features_and_labels(predict_filtered)
 
