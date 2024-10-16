@@ -32,7 +32,8 @@ class Printer(BaseEstimator, TransformerMixin):
 
 
 class PipelineWrapper2(BaseEstimator, TransformerMixin):
-	def __init__(self, n_comps=2, filter_transformer=None, epoch_extractor=None, feature_extractor=None, pca=None, model=None):
+	def __init__(self, filter_transformer=None, epoch_extractor=None, feature_extractor=None, pca=None, model=None):
+
 		self.n_comps = n_comps
 		self.filter_transformer = filter_transformer #if notr none blablab
 		self.epoch_extractor = epoch_extractor #if notr none blablab
@@ -43,12 +44,19 @@ class PipelineWrapper2(BaseEstimator, TransformerMixin):
 		# self.reshaper = reshaper if reshaper is not None else {}
 		self.pca = pca if pca is not None else My_PCA(n_comps=n_comps)
 		self.model = model if model is not None else MLPClassifier(random_state=42, hidden_layer_sizes=(20, 10), max_iter=16000)
+		
+		#complains that I also gotta implement this for cross eval
+		# self.steps = None
+		# self.memory = memory
+		# self.verbose = verbose
 		#when we create this pipeline we have to create composite estimators
 		#https://scikit-learn.org/1.5/modules/compose.html#combining-estimators\
 		# self.pipeline = Pipeline([("PCA", self.pca), ("Printer", Printer()), ("LogisticRegression", self.model)])
 		#https://scikit-learn.org/1.5/modules/generated/sklearn.pipeline.FeatureUnion.html#sklearn.pipeline.FeatureUnion
-		self.pipeline = Pipeline([
-			('filter', self.filter_transformer),
+		self.pipeline = Pipeline(
+			# memory=self.memory,
+			# verbose = self.verbose
+			[('filter', self.filter_transformer),
 			('epoch_extractor', self.epoch_extractor),
 			('feature_extractor', self.feature_extractor),
 			('scaler', self.scaler),
