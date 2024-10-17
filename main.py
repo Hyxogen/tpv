@@ -290,7 +290,7 @@ pipeline_wrapper = Pipeline([
 	('scaler', custom_scaler),
 	('reshaper', reshaper),
 	('pca', my_pca),
-	('classification', mlp_classifier)
+	('classifier', mlp_classifier)
 ])
 
 # pipeline_wrapper = Pipeline([
@@ -390,3 +390,42 @@ print(f'Average accuracy: {scores.mean()}')
 #maybe take a look at GridSearch as well?
 # print(f'Cross-validation accuracy scores for each fold: {scores}')
 # print(f'Average accuracy: {scores.mean()}')
+
+grid_search_params = {
+	#num of pca components to try in the pipeline
+	'pca__n_comps': [20,30,42,50],
+	#hidden layers of multilayer perceptron class
+	'classifier__hidden_layer_sizes': [(20, 10), (50, 20), (100, 50)],
+	#relu->helps mitigate vanishing gradients, faster convergence
+	#tanh->hyperbolic tangent, outputs centered around zero
+	'classifier__activation': ['relu', 'tanh'],
+	#adam, efficient for large datasets, adapts learning rates
+	#stochastic gradient, generalize better, slower convergence
+	'classifier__solver': ['adam', 'sgd'],
+	'classifier__learning_rate_init': [0.001, 0.01, 0.1]
+}
+
+from sklearn.model_selection import GridSearchCV
+
+grid_search = GridSearchCV(
+	estimator=pipeline_wrapper,
+	param_grid=grid_search_params,
+	cv=9,  #9fold cross-val
+	scoring='accuracy',  #evalmetric
+	n_jobs=-1,  #util all all available cpu cores
+	verbose=2  # For detailed output
+)
+
+grid_search.fit(test_extracted_features, labels_predict)
+
+# Review Results
+print("Best Parameters:")
+print(grid_search.best_params_)
+
+print(f"Best Cross-Validation Accuracy: {grid_search.best_score_:.2f}")
+
+# Retrieve the Best Pipeline
+best_pipeline = grid_search.best_estimator_
+
+# Fit the Best Pipeline on the Entire Dataset (Optional)
+best_pipeline.fit(test_extracted_features, labels_predict)
