@@ -267,6 +267,12 @@ mlp_classifier = MLPClassifier(hidden_layer_sizes=(20,10),
 							   random_state=42
 )
 
+dataset_preprocessor = Preprocessor()
+# raw_data = dataset_preprocessor.load_raw_data(data_path=files)
+loaded_data = dataset_preprocessor.load_raw_data(data_path=files) #RETURN DOESNT WORK, IT RETURNS AFTER 1 FILE
+filtered_data = dataset_preprocessor.filter_raw_data() #THIS WILL BE INITIAL FILTER TRANSFORMER
+epochs, labels = extract_epochs_and_labelsf(filtered_data)
+trained_extracted_features = feature_transformer.transform(epochs)
 
 # pipeline_2 = PipelineWrapper2(filter_new, features_extractor_new)
 # pipeline_wrapper = PipelineWrapper2(
@@ -275,10 +281,12 @@ mlp_classifier = MLPClassifier(hidden_layer_sizes=(20,10),
 # 	epoch_extractor=epoch_transformer,
 # 	feature_extractor=feature_transformer,
 # )
+
+
 pipeline_wrapper = Pipeline([
-	('filter', filter_transformer),
-	('epoch_extractor', epoch_transformer),
-	('feature_extractor', feature_transformer),
+	# ('filter', filter_transformer),
+	# ('epoch_extractor', epoch_transformer),
+	# ('feature_extractor', feature_transformer),
 	('scaler', custom_scaler),
 	('reshaper', reshaper),
 	('pca', my_pca),
@@ -296,7 +304,7 @@ pipeline_wrapper = Pipeline([
 # ])
 
 # print(f'{len(epochs)} are epoch lens,\n{len(labels)} are label lens in training')
-pipeline_wrapper.fit(filtered_data, labels)
+pipeline_wrapper.fit(trained_extracted_features, labels)
 
 # shuffle_split_validation = ShuffleSplit(n_splits=5, test_size=0.3, random_state=0)
 # # print(filtered_data)
@@ -326,28 +334,24 @@ pipeline_wrapper.fit(filtered_data, labels)
 
 # pipeline_custom = PipelineWrapper(n_comps=42)
 # pipeline_custom.fit(x_train, y_train)
-
-
-
-
-
-
 #------------------------------------------------------------------------------------------------------------
 
+#can it be that dataset preprocessor filters/loads wrong data?
 predict_raw = dataset_preprocessor.load_raw_data(data_path=predict)
 predict_filtered = dataset_preprocessor.filter_raw_data()
 epochs_predict, labels_predict = extract_epochs_and_labelsf(predict_filtered)
+test_extracted_features = feature_transformer.transform(epochs_predict)
 print(f'{len(epochs_predict)} is the len of the EPOCHS extracted from filtered, {len(labels_predict)} is the len of the labels predicted\n')
 
 
-filter_transformer = FunctionTransformer(initial_filter, validate=False)
-epoch_transformer = FunctionTransformer(epoch_extractooor, validate=False)
-feature_transformer = FunctionTransformer(feature_extractor)
+# filter_transformer = FunctionTransformer(initial_filter, validate=False)
+# epoch_transformer = FunctionTransformer(epoch_extractooor, validate=False)
+# feature_transformer = FunctionTransformer(feature_extractor)
 
-filter_predict = initial_filter(predict_filtered)
-epochs_predict = epoch_extractooor(filter_predict)
-features_predict = feature_extractor(epochs_predict)
-
+# filter_predict = initial_filter(predict_filtered)
+# epochs_predict = epoch_extractooor(filter_predict)
+# features_predict = feature_extractor(epochs_predict)
+print(f'{len(test_extracted_features)} is the len of predicted features')
 
 
 
@@ -362,14 +366,18 @@ print(f'PREDICT FILTERED IS\n{predict_filtered}')
 # # scoring = ['accuracy', 'precision', 'f1_micro'] this only works for: scores = cross_validate(pipeline_custom, x_train, y_train, scoring=scoring, cv=k_fold_cross_val)
 # # scores = cross_val_score(pipeline_custom, x_train, y_train, scoring='accuracy', cv=shuffle_split_validation)
 scores = cross_val_score(
-	pipeline_wrapper, predict_filtered, 
+	pipeline_wrapper, test_extracted_features, 
 	labels_predict, 
 	scoring='accuracy', 
-	cv=shuffle_split_validation,
-	n_jobs=-1,
-	verbose=1)
+	cv=shuffle_split_validation
+)
+	# n_jobs=-1,
+	# verbose=1)
 
 # sorted(scores.keys())
+
+print(scores)
+print(f'Average accuracy: {scores.mean()}')
 
 # res_my = pipeline_custom.predict(px_my)
 # res_my = pipeline_wrapper.predict(predict_filtered)

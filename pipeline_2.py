@@ -32,7 +32,7 @@ class Printer(BaseEstimator, TransformerMixin):
 
 
 class PipelineWrapper2(BaseEstimator, TransformerMixin):
-	def __init__(self, filter_transformer=None, epoch_extractor=None, feature_extractor=None, pca=None, model=None):
+	def __init__(self, n_comps=42, filter_transformer=None, epoch_extractor=None, feature_extractor=None, pca=None, model=None):
 
 		self.n_comps = n_comps
 		self.filter_transformer = filter_transformer #if notr none blablab
