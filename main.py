@@ -16,11 +16,9 @@ from sklearn.model_selection import ShuffleSplit
 from sklearn.model_selection import cross_val_score, KFold
 
 from dataset_preprocessor import Preprocessor
-from pipeline import PipelineWrapper
-from pipeline_2 import PipelineWrapper2
 from epoch_processor import EpochProcessor
 from feature_extractor import FeatureExtractor
-from analysis_manager import AnalysisManager
+
 
 import joblib
 
@@ -247,42 +245,13 @@ def load_pipeline(self, filepath):
 # ica = mne.preprocessing.ICA(method="infomax")
 #--------------------------------------------------------------------------------------------------------------------------
 
-
-
-#beginning of preprocessor class
-dataset_preprocessor = Preprocessor()
-# raw_data = dataset_preprocessor.load_raw_data(data_path=files)
-loaded_data = dataset_preprocessor.load_raw_data(data_path=files) #RETURN DOESNT WORK, IT RETURNS AFTER 1 FILE
-filtered_data = dataset_preprocessor.filter_raw_data() #THIS WILL BE INITIAL FILTER TRANSFORMER
-epochs, labels = extract_epochs_and_labelsf(filtered_data)
-
-#this is gonna be in the pipeline object as initialFilterTransformer
-
-
-
-#we have now the filtered data, we n
-# feature_extractor = FeatureExtractor(filtered_data)
-feature_extractor1 = FeatureExtractor()
-epoch_processor = EpochProcessor(feature_extractor1) #dependency injection, in python not necessary but good habit
-analysis_manager = AnalysisManager(epoch_processor)
-
-# # x_train, y_train = get(filtered_data) #analysismanager get_features_and_labels
-#we need to extract labels separately
-# x_train, y_train = analysis_manager.get_features_and_labels(filtered_data)
-
-# pipeline_custom = PipelineWrapper(n_comps=42)
-# pipeline_custom.fit(x_train, y_train)
-
-
-# print(type(filtered_data))
-# print(type(labels))
-
 #https://scikit-learn.org/dev/modules/generated/sklearn.preprocessing.FunctionTransformer.html
 custom_scaler = CustomScaler()
 reshaper = Reshaper()
-filter_transformer = FunctionTransformer(initial_filter, validate=False)
-epoch_transformer = FunctionTransformer(epoch_extractooor, validate=False)
-feature_transformer = FunctionTransformer(feature_extractor)
+filter_transformer = FunctionTransformer(initial_filter)#not sure why are these not callable
+epoch_transformer = FunctionTransformer(epoch_extractooor) #not sure why are these not callable
+feature_transformer = FunctionTransformer(feature_extractor) #and this is
+
 my_pca = My_PCA(n_comps=42)
 mlp_classifier = MLPClassifier(hidden_layer_sizes=(20,10),
 							   max_iter=16000,
@@ -290,75 +259,30 @@ mlp_classifier = MLPClassifier(hidden_layer_sizes=(20,10),
 )
 
 dataset_preprocessor = Preprocessor()
-# raw_data = dataset_preprocessor.load_raw_data(data_path=files)
 loaded_data = dataset_preprocessor.load_raw_data(data_path=files) #RETURN DOESNT WORK, IT RETURNS AFTER 1 FILE
 filtered_data = dataset_preprocessor.filter_raw_data() #THIS WILL BE INITIAL FILTER TRANSFORMER
-epochs, labels = extract_epochs_and_labelsf(filtered_data)
-trained_extracted_features = feature_transformer.transform(epochs)
 
-# pipeline_2 = PipelineWrapper2(filter_new, features_extractor_new)
-# pipeline_wrapper = PipelineWrapper2(
-# 	n_comps=42,
-# 	filter_transformer=filter_transformer,
-# 	epoch_extractor=epoch_transformer,
-# 	feature_extractor=feature_transformer,
-# )
+# transformer_filter = filter_transformer(loaded_data) -> not callable
+
+epoch_extractor = EpochExtractor()
+epochs = epoch_extractor.epoch_extractooor(filtered_data)
+
+# transformer_epochs = epoch_transformer(filtered_data) -> not callables
+
+_, labels = extract_epochs_and_labelsf(filtered_data)
+trained_extracted_features = feature_transformer.transform(epochs) #callable
 
 
-pipeline_wrapper = Pipeline([
-	# ('filter', filter_transformer),
-	# ('epoch_extractor', epoch_transformer),
-	# ('feature_extractor', feature_transformer),
+pipeline = Pipeline([
 	('scaler', custom_scaler),
 	('reshaper', reshaper),
 	('pca', my_pca),
 	('classifier', mlp_classifier)
 ])
 
+pipeline.fit(trained_extracted_features, labels)
 
 
-
-# pipeline_wrapper = Pipeline([
-# 	('filter', filter_transformer),
-# 	('epoch_extractor', epoch_transformer),
-# 	('feature_extractor', feature_transformer),
-# 	('scaler', CustomScaler()),
-# 	('reshaper', Reshaper()),
-# 	('pca', My_PCA(n_comps=42)),
-# 	('classification', MLPClassifier(hidden_layer_sizes=(20, 10), max_iter=16000, random_state=42))
-# ])
-
-# print(f'{len(epochs)} are epoch lens,\n{len(labels)} are label lens in training')
-pipeline_wrapper.fit(trained_extracted_features, labels)
-
-# shuffle_split_validation = ShuffleSplit(n_splits=5, test_size=0.3, random_state=0)
-# # print(filtered_data)
-# scores = cross_val_score(pipeline_wrapper, filtered_data, labels, scoring='accuracy', cv=shuffle_split_validation)
-
-
-# filter_new = InitialFilterTransformer()
-# filtered_data_new = filter_new.transform(loaded_data)
-
-# # epoch_extractor_new = EpochExtractor()
-# # epochs = epoch_extractor_new.transform(filtered_data_new) #this just gets the epochs which were previously processed and extracted by analysismanager
-
-# features_extractor_new = FeatureExtractor()
-# features = features_extractor_new.transform(epochs)
-
-
-
-# pipeline_2 = PipelineWrapper2(filter_new, features_extractor_new)
-# pipeline_2.transform(epochs, labels)
-# pipeline_2.pipeline[:-1].get_feature_names_out()
-
-#WORKS WITH THIS!!! TOMORROW LETS SEE IF WE CAN PUT INITFILTER,EPOCHEXTRACTOR,FEATUREEXTRACTOR INTO THE PIPELINE AND SAVE IT FOR THE PREDICT SCRIPT
-# x_train, y_train = analysis_manager.get_features_and_labels(filtered_data)
-# x_train, y_train = features, labels
-# # print(x_train)
-# # print(y_train)
-
-# pipeline_custom = PipelineWrapper(n_comps=42)
-# pipeline_custom.fit(x_train, y_train)
 #------------------------------------------------------------------------------------------------------------
 
 #can it be that dataset preprocessor filters/loads wrong data?
@@ -366,35 +290,18 @@ predict_raw = dataset_preprocessor.load_raw_data(data_path=predict)
 predict_filtered = dataset_preprocessor.filter_raw_data()
 epochs_predict, labels_predict = extract_epochs_and_labelsf(predict_filtered)
 test_extracted_features = feature_transformer.transform(epochs_predict)
-print(f'{len(epochs_predict)} is the len of the EPOCHS extracted from filtered, {len(labels_predict)} is the len of the labels predicted\n')
 
-
-# filter_transformer = FunctionTransformer(initial_filter, validate=False)
-# epoch_transformer = FunctionTransformer(epoch_extractooor, validate=False)
-# feature_transformer = FunctionTransformer(feature_extractor)
-
-# filter_predict = initial_filter(predict_filtered)
-# epochs_predict = epoch_extractooor(filter_predict)
-# features_predict = feature_extractor(epochs_predict)
-print(f'{len(test_extracted_features)} is the len of predicted features')
-
-
-
-# px_my, py_my = get(predict_filtered)
-# px_my, py_my = analysis_manager.get_features_and_labels(predict_filtered)
-
-
-# k_fold_cross_val = KFold(n_splits=15, shuffle=True, random_state=42)
 shuffle_split_validation = ShuffleSplit(n_splits=5, test_size=0.3, random_state=0)
 print(f'PREDICT FILTERED IS\n{predict_filtered}')
 
 # # scoring = ['accuracy', 'precision', 'f1_micro'] this only works for: scores = cross_validate(pipeline_custom, x_train, y_train, scoring=scoring, cv=k_fold_cross_val)
 # # scores = cross_val_score(pipeline_custom, x_train, y_train, scoring='accuracy', cv=shuffle_split_validation)
 scores = cross_val_score(
-	pipeline_wrapper, test_extracted_features, 
+	pipeline, test_extracted_features, 
 	labels_predict, 
 	scoring='accuracy', 
 	cv=shuffle_split_validation
+
 )
 	# n_jobs=-1,
 	# verbose=1)
@@ -403,18 +310,6 @@ scores = cross_val_score(
 
 print(scores)
 print(f'Average accuracy: {scores.mean()}')
-
-# res_my = pipeline_custom.predict(px_my)
-# res_my = pipeline_wrapper.predict(predict_filtered)
-
-# print(labels_predict)
-# print(res_my)
-# acc_my = accuracy_score(labels_predict, res_my)
-# print(acc_my)
-
-#maybe take a look at GridSearch as well?
-# print(f'Cross-validation accuracy scores for each fold: {scores}')
-# print(f'Average accuracy: {scores.mean()}')
 
 grid_search_params = {
 	#num of pca components to try in the pipeline
@@ -433,7 +328,7 @@ grid_search_params = {
 from sklearn.model_selection import GridSearchCV
 
 grid_search = GridSearchCV(
-	estimator=pipeline_wrapper,
+	estimator=pipeline,
 	param_grid=grid_search_params,
 	cv=9,  #9fold cross-val
 	scoring='accuracy',  #evalmetric
@@ -443,16 +338,14 @@ grid_search = GridSearchCV(
 
 grid_search.fit(test_extracted_features, labels_predict)
 
-# Review Results
+
 print("Best Parameters:")
 print(grid_search.best_params_)
 
 print(f"Best Cross-Validation Accuracy: {grid_search.best_score_:.2f}")
 
-# Retrieve the Best Pipeline
-best_pipeline = grid_search.best_estimator_
 
-# Fit the Best Pipeline on the Entire Dataset (Optional)
-best_pipeline.fit(test_extracted_features, labels_predict)
+best_pipeline = grid_search.best_estimator_
+best_pipeline.fit(test_extracted_features, labels_predict) #fit the best pipeline, then export that
 
 joblib.dump(best_pipeline, 'pipe.joblib')

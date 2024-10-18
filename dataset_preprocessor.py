@@ -8,7 +8,6 @@ class Preprocessor:
 		self.raw_data = []
 
 
-
 	def load_raw_data(self, data_path):
 		for file_path in data_path:
 			file_path = Path(file_path)  #convert each individual path to a Path object

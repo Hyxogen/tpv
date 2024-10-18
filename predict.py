@@ -15,13 +15,12 @@ from sklearn.model_selection import ShuffleSplit
 from sklearn.model_selection import cross_val_score, KFold
 
 from dataset_preprocessor import Preprocessor
-from pipeline import PipelineWrapper
-from pipeline_2 import PipelineWrapper2
 from epoch_processor import EpochProcessor
 from feature_extractor import FeatureExtractor
-from analysis_manager import AnalysisManager
 
 import joblib
+import matplotlib.pyplot as plt
+
 
 from epoch_extractor import epoch_extractooor, extract_epochs
 from feature_extractor import feature_extractor, create_feature_vectors, calculate_mean_power_energy
@@ -197,6 +196,7 @@ files = [
 def extract_epochs(data):
 	event_id = {"T1": 1, "T2": 2}
 	events, _ = mne.events_from_annotations(data)
+	print(f'{events} are possible events')
 	sfreq = data.info["sfreq"] #this is 160 but we could create a custom dataclass to pass this along, transform only expects an X output
 	epochs = mne.Epochs(data, events, event_id=event_id, tmin=-2, tmax=5.1,
 						baseline=None, preload=True)
@@ -259,6 +259,34 @@ def feature_extractor_small(filtered_epochs):
 
 
 
+
+
+
+#-------------------------------------------------------
+#wanna plot eeg data, how does it look at each epoch to see what we are actually predicting
+# def plot_epochs_custom(all_epochs, labels):
+# 	'''
+# 	Plots each epoch using Matplotlib with channel offsets for clarity.
+# 	'''
+# 	n_channels = len(all_epochs.ch_names)
+# 	for idx, (epoch, label) in enumerate(zip(all_epochs, labels)):
+# 		data = epoch.get_data()[0]  # Shape: (n_channels, n_times)
+# 		times = epoch.times
+# 		plt.figure(figsize=(15, 7))
+		
+# 		for ch_idx, ch in enumerate(all_epochs.ch_names):
+# 			plt.plot(times, data[ch_idx] + ch_idx * 100, label=ch)  # Offset channels for visibility
+		
+# 		plt.title(f'Epoch {idx + 1} - Label: {label}')
+# 		plt.xlabel('Time (s)')
+# 		plt.ylabel('Amplitude + Offset')
+# 		plt.legend(loc='upper right', fontsize='small')
+# 		plt.tight_layout()
+# 		plt.show()
+# 		# Optionally, add a pause or wait for user input to proceed
+# 		# input("Press Enter to continue to the next epoch...")
+
+
 def main():
 	pipeline = joblib.load('pipe.joblib')
 	dataset_preprocessor = Preprocessor()
@@ -267,15 +295,18 @@ def main():
 	epochs_predict, labels_predict = extract_epochs_and_labelsf(predict_filtered)
 	feature_transformer = FunctionTransformer(feature_extractor)
 	test_extracted_features = feature_transformer.transform(epochs_predict)
-	print(f'{len(epochs_predict)} is the len of the EPOCHS extracted from filtered, {len(labels_predict)} is the len of the labels predicted\n')
-	
+	# print(f'{len(epochs_predict)} is the len of the EPOCHS extracted from filtered, {len(labels_predict)} is the len of the labels predicted\n')
+	# print(f'{predict_raw.ch_names} ARE THE CH NAMES!!!!!')
 	
 	idx = 0
 	print(f'epoch nb:	[prediction]	[truth]		equal?')
-	chunk_range = len(test_extracted_features) // 20 #per 4 epochs lets say
+	chunk_range = len(test_extracted_features) // len(test_extracted_features) #per 4 epochs lets say
 	i = 0 
 	true_predictions_per_chunks = []
 	while i < len(test_extracted_features):
+		# current_epoch = epochs_predict[i]
+		# current_epoch['T1'].plot_psd(picks='eeg')
+		# current_epoch['T1'].plot_psd_topomap()
 		
 		start_time = time.time()
 		print(f'start time: {start_time}')
@@ -290,13 +321,14 @@ def main():
 		
 		idx += chunk_range
 		i += chunk_range
-	
-	accuracy = np.sum(true_predictions_per_chunks) / len(labels_predict)
-	print(f'Accuracy: {accuracy}\n')
-	end_time = time.time()
-	print(f'end time: {end_time}\nElapsed time: {end_time - start_time}\n')
-
-
+		end_time = time.time()
+		elapsed_time = end_time - start_time
+		print(f'end time: {end_time}\nElapsed time: {elapsed_time}\n')
+		if (elapsed_time < 1):
+			time.sleep(2 - elapsed_time)
+		
+	total_accuracy_on_this_test_set = np.sum(true_predictions_per_chunks)/len(test_extracted_features)
+	print(f'{total_accuracy_on_this_test_set} is the total accuracy on this test set. Now we test with cross validation.')
 	shuffle_split_validation = ShuffleSplit(n_splits=5, test_size=0.3, random_state=0)
 	scores = cross_val_score(
 		pipeline, test_extracted_features, 
