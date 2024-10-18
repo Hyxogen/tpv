@@ -22,6 +22,7 @@ from epoch_processor import EpochProcessor
 from feature_extractor import FeatureExtractor
 from analysis_manager import AnalysisManager
 
+import joblib
 
 from epoch_extractor import epoch_extractooor, extract_epochs
 from feature_extractor import feature_extractor, create_feature_vectors, calculate_mean_power_energy
@@ -42,11 +43,11 @@ predict = [
 "files/S018/S018R11.edf",
 "files/S042/S042R07.edf",
 "files/S042/S042R03.edf",
-#"/files/S104/S104R11.edf",
-#"/files/S104/S104R07.edf",
-#"/files/S090/S090R11.edf",
-#"/files/S086/S086R11.edf",
-#"/files/S086/S086R03.edf",
+"files/S104/S104R11.edf",
+"files/S104/S104R07.edf",
+"files/S090/S090R11.edf",
+"files/S086/S086R11.edf",
+"files/S086/S086R03.edf",
 #"/files/S086/S086R07.edf",
 #"/files/S017/S017R11.edf",
 #"/files/S017/S017R07.edf",
@@ -222,6 +223,27 @@ def extract_epochs_and_labelsf(eeg_data):
 
 
 
+
+
+def save_pipeline(filepath, pipeline):
+	joblib.dump({
+		'scaler': pipeline.scaler,
+		'reshaper': pipeline.reshaper,
+		'pca': pipeline.pca,
+		'classifier': pipeline.classifier,
+	}, filepath)
+
+
+
+def load_pipeline(self, filepath):
+	data = 	joblib.load(filepath)
+	self.scalers = data['scalers']
+	self.pipeline = data['pipeline']
+
+
+
+
+
 # ica = mne.preprocessing.ICA(method="infomax")
 #--------------------------------------------------------------------------------------------------------------------------
 
@@ -292,6 +314,9 @@ pipeline_wrapper = Pipeline([
 	('pca', my_pca),
 	('classifier', mlp_classifier)
 ])
+
+
+
 
 # pipeline_wrapper = Pipeline([
 # 	('filter', filter_transformer),
@@ -429,3 +454,5 @@ best_pipeline = grid_search.best_estimator_
 
 # Fit the Best Pipeline on the Entire Dataset (Optional)
 best_pipeline.fit(test_extracted_features, labels_predict)
+
+joblib.dump(best_pipeline, 'pipe.joblib')
