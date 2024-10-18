@@ -196,6 +196,8 @@ files = [
 def extract_epochs(data):
 	event_id = {"T1": 1, "T2": 2}
 	events, _ = mne.events_from_annotations(data)
+	# events_other = mne.find_events(data)
+	# print(f'{events_other} are OTHER EVENTS')
 	print(f'{events} are possible events')
 	sfreq = data.info["sfreq"] #this is 160 but we could create a custom dataclass to pass this along, transform only expects an X output
 	epochs = mne.Epochs(data, events, event_id=event_id, tmin=-2, tmax=5.1,
@@ -264,34 +266,33 @@ def feature_extractor_small(filtered_epochs):
 
 #-------------------------------------------------------
 #wanna plot eeg data, how does it look at each epoch to see what we are actually predicting
-# def plot_epochs_custom(all_epochs, labels):
-# 	'''
-# 	Plots each epoch using Matplotlib with channel offsets for clarity.
-# 	'''
-# 	n_channels = len(all_epochs.ch_names)
-# 	for idx, (epoch, label) in enumerate(zip(all_epochs, labels)):
-# 		data = epoch.get_data()[0]  # Shape: (n_channels, n_times)
-# 		times = epoch.times
-# 		plt.figure(figsize=(15, 7))
-		
-# 		for ch_idx, ch in enumerate(all_epochs.ch_names):
-# 			plt.plot(times, data[ch_idx] + ch_idx * 100, label=ch)  # Offset channels for visibility
-		
-# 		plt.title(f'Epoch {idx + 1} - Label: {label}')
-# 		plt.xlabel('Time (s)')
-# 		plt.ylabel('Amplitude + Offset')
-# 		plt.legend(loc='upper right', fontsize='small')
-# 		plt.tight_layout()
-# 		plt.show()
-# 		# Optionally, add a pause or wait for user input to proceed
-# 		# input("Press Enter to continue to the next epoch...")
+def plot_eeg_epoch(epoch_data, ax):
+	"""
+	Update the EEG plot on the same axis for the current epoch.
+	"""
+	# epoch_data is a 2D array of shape (n_channels, n_times)
+	ax.clear()  # Clear the previous plot
+	times = np.linspace(-2, 5.1, epoch_data.shape[1])  # Assuming the time range is [-2, 5.1]
+	
+	# Plot each channel's data on the same plot
+	for channel_data in epoch_data:
+		ax.plot(times, channel_data)
+
+	ax.set_title('EEG Data for Current Epoch')
+	ax.set_xlabel('Time (s)')
+	ax.set_ylabel('Amplitude (uV)')
+	ax.grid(True)
+	plt.draw()
+	plt.pause(0.01)  # Short pause to allow the figure to update
 
 
 def main():
 	pipeline = joblib.load('pipe.joblib')
 	dataset_preprocessor = Preprocessor()
+
 	predict_raw = dataset_preprocessor.load_raw_data(data_path=predict)
 	predict_filtered = dataset_preprocessor.filter_raw_data()
+
 	epochs_predict, labels_predict = extract_epochs_and_labelsf(predict_filtered)
 	feature_transformer = FunctionTransformer(feature_extractor)
 	test_extracted_features = feature_transformer.transform(epochs_predict)
@@ -300,9 +301,17 @@ def main():
 	
 	idx = 0
 	print(f'epoch nb:	[prediction]	[truth]		equal?')
-	chunk_range = len(test_extracted_features) // len(test_extracted_features) #per 4 epochs lets say
+	chunk_range = 1 #len(test_extracted_features) // len(test_extracted_features)  #per 4 epochs lets say
 	i = 0 
 	true_predictions_per_chunks = []
+
+	fig, ax = plt.subplots(figsize=(10, 5))
+	print(f'{len(epochs_predict)} is the len of the predicted epochs')
+	print(f'{len(test_extracted_features)} is the len of the extracted features')
+	# flattened_epochs = [epoch for file_epochs in epochs_predict for epoch in file_epochs]
+	# print(f'{len(flattened_epochs)} is the len of the flattened_epochs')
+
+	# sys.exit(0)
 	while i < len(test_extracted_features):
 		# current_epoch = epochs_predict[i]
 		# current_epoch['T1'].plot_psd(picks='eeg')
@@ -318,14 +327,22 @@ def main():
 			print(f'epoch nb:	[prediction]	[truth]		equal?')
 			is_prediction_true = (current_pred[compare_idx] == labels_predict[i+compare_idx])
 			print(f'epoch {compare_idx+idx}:	{current_pred[compare_idx]}	 {labels_predict[i+compare_idx]}	{is_prediction_true} \n')
-		
+
+			if (i+compare_idx < len(test_extracted_features)):
+				print(f'{i+compare_idx} is the current idx')
+				current_epoch = epochs_predict[i + compare_idx].get_data()[0]  # Assuming 1 epoch at a time
+				print(type(current_epoch))
+				# plot_eeg_epoch(current_epoch, ax)  # Update the plot with the new epoch data
+
+			
+
 		idx += chunk_range
 		i += chunk_range
 		end_time = time.time()
 		elapsed_time = end_time - start_time
 		print(f'end time: {end_time}\nElapsed time: {elapsed_time}\n')
-		if (elapsed_time < 1):
-			time.sleep(2 - elapsed_time)
+		if (elapsed_time < 3):
+			time.sleep(3- elapsed_time)
 		
 	total_accuracy_on_this_test_set = np.sum(true_predictions_per_chunks)/len(test_extracted_features)
 	print(f'{total_accuracy_on_this_test_set} is the total accuracy on this test set. Now we test with cross validation.')
