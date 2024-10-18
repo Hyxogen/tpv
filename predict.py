@@ -32,6 +32,7 @@ from filter_transformer import initial_filter, filter_frequencies
 from filter_transformer import InitialFilterTransformer
 from epoch_extractor import EpochExtractor
 
+import time
 
 from custom_scaler import CustomScaler
 from reshaper import Reshaper
@@ -224,6 +225,40 @@ def extract_epochs_and_labelsf(eeg_data):
 
 
 
+def feature_extractor_small(filtered_epochs):
+	'''
+	Input: current filtered epoch from EpochExtractor
+	Output: a (x,y,z)d np array of created features based on mean, energy, power
+	NO LABELS HERE, WILL DO SEPARATE
+	'''
+
+	analysis = {
+		'mrcp': {'tmin': -2, 'tmax': 0, 'lofreq': 3, 'hifreq': 30},
+		'erd': {'tmin': -2, 'tmax': 0, 'lofreq': 8, 'hifreq': 30},
+		'ers': {'tmin': 4.1, 'tmax': 5.1, 'lofreq': 8, 'hifreq': 30}
+	}
+
+	feature_matrices = []
+	labels = []
+	for analysis_name, parameters in analysis.items():
+		cropped_epochs = filtered_epochs.copy().crop(tmin=parameters['tmin'], tmax=parameters['tmax'])
+		filtered_epoch = cropped_epochs.filter(h_freq=parameters['hifreq'],
+												l_freq=parameters['lofreq'],
+												method='iir')
+		
+		feature_matrix, y = create_feature_vectors(filtered_epoch, 160.0, compute_y=None)
+		feature_matrices.append(feature_matrix)
+
+		#check samples for consistent counts
+		sample_counts = [fm.shape[0] for fm in feature_matrices]
+		if not all(count == sample_counts[0] for count in sample_counts):
+			raise ValueError("Inconsistent number of samples across analyses. Ensure all have the same number of epochs.")
+	
+	ret = np.concatenate(feature_matrices, axis=0) #this is now (59 epoch list, 21 epochs inside, 9*8 feature combinations) thus we need to concat them 
+	return ret
+
+
+
 def main():
 	pipeline = joblib.load('pipe.joblib')
 	dataset_preprocessor = Preprocessor()
@@ -233,10 +268,36 @@ def main():
 	feature_transformer = FunctionTransformer(feature_extractor)
 	test_extracted_features = feature_transformer.transform(epochs_predict)
 	print(f'{len(epochs_predict)} is the len of the EPOCHS extracted from filtered, {len(labels_predict)} is the len of the labels predicted\n')
-	shuffle_split_validation = ShuffleSplit(n_splits=5, test_size=0.3, random_state=0)
+	
+	
+	idx = 0
+	print(f'epoch nb:	[prediction]	[truth]		equal?')
+	chunk_range = len(test_extracted_features) // 20 #per 4 epochs lets say
+	i = 0 
+	true_predictions_per_chunks = []
+	while i < len(test_extracted_features):
+		
+		start_time = time.time()
+		print(f'start time: {start_time}')
+		current_pred = pipeline.predict(test_extracted_features[i:i+chunk_range])
+		true_predictions = np.sum(current_pred == labels_predict[i:i+chunk_range])
+		true_predictions_per_chunks.append(true_predictions)
+		
+		for compare_idx in range(len(current_pred)):
+			print(f'epoch nb:	[prediction]	[truth]		equal?')
+			is_prediction_true = (current_pred[compare_idx] == labels_predict[i+compare_idx])
+			print(f'epoch {compare_idx+idx}:	{current_pred[compare_idx]}	 {labels_predict[i+compare_idx]}	{is_prediction_true} \n')
+		
+		idx += chunk_range
+		i += chunk_range
+	
+	accuracy = np.sum(true_predictions_per_chunks) / len(labels_predict)
+	print(f'Accuracy: {accuracy}\n')
+	end_time = time.time()
+	print(f'end time: {end_time}\nElapsed time: {end_time - start_time}\n')
 
-	# # scoring = ['accuracy', 'precision', 'f1_micro'] this only works for: scores = cross_validate(pipeline_custom, x_train, y_train, scoring=scoring, cv=k_fold_cross_val)
-	# # scores = cross_val_score(pipeline_custom, x_train, y_train, scoring='accuracy', cv=shuffle_split_validation)
+
+	shuffle_split_validation = ShuffleSplit(n_splits=5, test_size=0.3, random_state=0)
 	scores = cross_val_score(
 		pipeline, test_extracted_features, 
 		labels_predict, 
@@ -246,7 +307,6 @@ def main():
 
 	print(scores)
 	print(f'Average accuracy: {scores.mean()}')
-
 
 
 if __name__ == "__main__":
